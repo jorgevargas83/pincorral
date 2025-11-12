@@ -55,24 +55,32 @@
             background-color: white;
             padding: 24px;
             border-radius: 8px;
-            width: 90%;
+            /* Ancho responsivo: 95% en móvil, 90% en PC */
+            width: 95%; 
             max-width: 500px; /* Tamaño por defecto */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        /* Modal de detalles del lote es más grande */
-        #modal-detalle-lote .modal-content {
-            max-width: 800px;
-        }
-        /* Modal del ganado (edición/registro) es un poco más grande para el formulario */
-        #modal-ganado .modal-content {
-            max-width: 650px; 
+        
+        /* Media query para pantallas más grandes (md: 768px) */
+        @media (min-width: 768px) {
+            .modal-content {
+                width: 90%;
+            }
+            /* Modal de detalles del lote es más grande */
+            #modal-detalle-lote .modal-content {
+                max-width: 800px;
+            }
+            /* Modal del ganado (edición/registro) es un poco más grande para el formulario */
+            #modal-ganado .modal-content {
+                max-width: 650px; 
+            }
         }
     </style>
 
 </head>
-<body class="bg-gray-100 p-8">
+<body class="bg-gray-100 p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <div class="max-w-4xl mx-auto bg-white p-4 md:p-6 rounded-lg shadow-lg">
 
         <h1 class="text-3xl font-bold text-blue-800 mb-6">Gestor de Ganado</h1>
 
@@ -87,14 +95,14 @@
 
         
         <div class="mb-4 border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" id="tab-nav">
-                <button class="tab-button active pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="inventario">
+            <nav class="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto" id="tab-nav">
+                <button class="tab-button active pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap" data-tab="inventario">
                     Mi Inventario
                 </button>
-                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="gestion">
+                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap" data-tab="gestion">
                     Gestión Reproductiva y Productiva
                 </button>
-                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="lotes">
+                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap" data-tab="lotes">
                     Lotes de Venta
                 </button>
             </nav>
@@ -104,13 +112,14 @@
             
             <div id="inventario" class="tab-content active">
                 <h2 class="text-xl font-semibold mb-4">Inventario General</h2>
-                <div class="mb-4 flex space-x-4">
+                
+                <div class="mb-4 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                     <div class="w-full">
                         <label for="input-buscador" class="block text-sm font-medium text-gray-700">Buscar por nombre/UID:</label>
                         <input type="text" id="input-buscador" placeholder="Escribe un nombre..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     </div>
                     
-                    <div class="w-1/3">
+                    <div class="w-full md:w-1/3">
                         <label for="select-filtro-sexo" class="block text-sm font-medium text-gray-700">Filtrar Sexo:</label>
                         <select id="select-filtro-sexo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                             <option value="todos">Todos</option>
@@ -155,8 +164,9 @@
                 
                 <div class="bg-orange-50 p-4 rounded-lg shadow-inner mb-6">
                     <h3 class="text-lg font-medium mb-3">Crear Nuevo Lote</h3>
-                    <div class="grid grid-cols-4 gap-4">
-                        <div class="col-span-2">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:items-end">
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Nombre del Lote</label>
                             <input type="text" id="lote-nombre" placeholder="Ej: Lote Engorde 3M-Enero" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                         </div>
@@ -169,7 +179,7 @@
                             </select>
                         </div>
                         <div>
-                            <button id="btn-crear-lote" class="mt-6 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">
+                            <button id="btn-crear-lote" class="mt-4 md:mt-0 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">
                                 Crear Lote
                             </button>
                         </div>
@@ -191,8 +201,8 @@
         <div class="modal-content">
             <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4 text-blue-800">Registrar Ganado</h2>
             
-            <div id="formulario-campos-container" class="bg-blue-50 p-6 rounded-lg">
-                <div class="grid grid-cols-3 gap-4">
+            <div id="formulario-campos-container" class="bg-blue-50 p-4 md:p-6 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">UID</label>
                         <input type="text" id="form-uid" readonly class="mt-1 block w-full p-2 bg-gray-200 border-gray-300 rounded-md shadow-sm">
@@ -215,12 +225,12 @@
                         <input type="date" id="form-fecha-nacimiento" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required>
                     </div>
                     
-                    <div class="col-span-1">
+                    <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
                         <input type="number" id="form-peso" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     </div>
 
-                    <div id="campo-estado-macho" class="hidden col-span-1">
+                    <div id="campo-estado-macho" class="hidden md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Estado del Macho</label>
                         <select id="form-estado-macho" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                             <option value="reproduccion">Reproducción</option>
@@ -229,7 +239,7 @@
                     </div>
                 </div>
 
-                <div id="campos-hembra" class="grid grid-cols-3 gap-4 mt-4">
+                <div id="campos-hembra" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Estado de la Hembra</label>
                         <select id="form-estado-hembra" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
@@ -239,7 +249,7 @@
                         </select>
                     </div>
                 
-                    <div id="campo-promedio-leche" class="hidden col-span-1">
+                    <div id="campo-promedio-leche" class="hidden md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Promedio de Leche (L/día)</label>
                         <input type="number" id="form-promedio-leche" min="0" step="0.1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     </div>
@@ -257,12 +267,12 @@
                         </select>
                     </div>
 
-                    <div class="col-span-1">
+                    <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Fecha del último parto</label>
                         <input type="date" id="form-ultimo-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     </div>
                     
-                    <div id="campo-fecha-estimada" class="hidden col-span-1">
+                    <div id="campo-fecha-estimada" class="hidden md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Fecha estimada del parto</label>
                         <input type="date" id="form-estimada-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                     </div>
@@ -298,26 +308,26 @@
             <h3 class="text-2xl font-bold mb-4 text-orange-700" id="detalle-lote-nombre">Detalles del Lote</h3>
             <p id="detalle-lote-id" class="text-sm text-gray-500 mb-4"></p>
             
-            <div class="grid grid-cols-3 gap-4 bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-200">
-                <div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-200">
+                <div class="text-center sm:text-left">
                     <p class="text-sm font-medium text-gray-700">Animales:</p>
                     <p class="text-xl font-semibold text-gray-900" id="detalle-stats-cantidad">0</p>
                 </div>
-                <div>
+                <div class="text-center sm:text-left">
                     <p class="text-sm font-medium text-gray-700">Peso Promedio:</p>
                     <p class="text-xl font-semibold text-gray-900" id="detalle-stats-peso">0 kg</p>
                 </div>
-                <div>
+                <div class="text-center sm:text-left">
                     <p class="text-sm font-medium text-gray-700">Edad Promedio:</p>
                     <p class="text-xl font-semibold text-gray-900" id="detalle-stats-edad">0 años</p>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center mb-4">
-                <button id="btn-abrir-asignacion-lote" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0 mb-4">
+                <button id="btn-abrir-asignacion-lote" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full sm:w-auto">
                     Añadir Animales
                 </button>
-                <button id="btn-vender-lote" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                <button id="btn-vender-lote" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full sm:w-auto">
                     Vender Lote y Eliminar Animales
                 </button>
             </div>
