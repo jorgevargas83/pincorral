@@ -17,6 +17,23 @@
         .highlight-animation {
             animation: highlight-flash 2s ease-out;
         }
+
+        /* Estilos de Pestañas */
+        .tab-button.active {
+            border-color: #1e40af; /* blue-700 */
+            color: #1e40af;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        .item-lote {
+            border-left-width: 8px; /* Borde ancho para lotes */
+        }
     </style>
 
 </head>
@@ -35,7 +52,7 @@
 
         <hr class="my-8">
 
-        <div id="formulario-registro" class="hidden bg-blue-50 p-6 rounded-lg">
+        <div id="formulario-registro" class="hidden bg-blue-50 p-6 rounded-lg mb-8">
             <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4">Registrar Ganado</h2>
             
             <div class="grid grid-cols-3 gap-4">
@@ -67,6 +84,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
                     <input type="number" id="form-peso" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+
+                <div id="campo-estado-macho" class="hidden col-span-1">
+                    <label class="block text-sm font-medium text-gray-700">Estado</label>
+                    <select id="form-estado-macho" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="reproduccion">Reproducción</option>
+                        <option value="venta">Venta / Engorde</option>
+                    </select>
                 </div>
             </div>
 
@@ -103,20 +128,88 @@
 
         <hr class="my-8">
 
-        <div>
-            <h2 class="text-2xl font-semibold mb-4">Mi Inventario de Ganado</h2>
-            
-            <div class="mb-4">
-                <label for="input-buscador" class="block text-sm font-medium text-gray-700">Buscar por nombre:</label>
-                <input type="text" id="input-buscador" placeholder="Escribe un nombre..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-            </div>
-
-            <p id="cargando-inventario" class="text-gray-500">Iniciando...</p>
-            <div id="lista-inventario" class="space-y-4">
-                </div>
+        <div class="mb-4 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" id="tab-nav">
+                <button class="tab-button active pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="inventario">
+                    Mi Inventario
+                </button>
+                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="pronostico">
+                    Pronóstico de Partos 🍼
+                </button>
+                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="lotes">
+                    Lotes de Venta 📈
+                </button>
+            </nav>
         </div>
 
-    </div>
+        <div id="tab-content-container">
+            
+            <div id="inventario" class="tab-content active">
+                <h2 class="text-xl font-semibold mb-4">Inventario General</h2>
+                <div class="mb-4 flex space-x-4">
+                    <div class="w-full">
+                        <label for="input-buscador" class="block text-sm font-medium text-gray-700">Buscar por nombre/UID:</label>
+                        <input type="text" id="input-buscador" placeholder="Escribe un nombre..." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    
+                    <div class="w-1/3">
+                        <label for="select-filtro-sexo" class="block text-sm font-medium text-gray-700">Filtrar Sexo:</label>
+                        <select id="select-filtro-sexo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="todos">Todos</option>
+                            <option value="hembra">Hembras</option>
+                            <option value="macho">Machos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p id="cargando-inventario" class="text-gray-500">Cargando datos...</p>
+                <div id="lista-inventario" class="space-y-4">
+                    </div>
+            </div>
+
+            <div id="pronostico" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-green-700">Partos más Cercanos</h2>
+                <p id="cargando-pronostico" class="text-gray-500">Analizando registros de hembras preñadas...</p>
+                <div id="lista-pronostico" class="space-y-4">
+                    </div>
+            </div>
+            
+            <div id="lotes" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-orange-700">Gestión de Lotes de Venta</h2>
+                
+                <div class="bg-orange-50 p-4 rounded-lg shadow-inner mb-6">
+                    <h3 class="text-lg font-medium mb-3">Crear Nuevo Lote</h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Nombre del Lote</label>
+                            <input type="text" id="lote-nombre" placeholder="Ej: Lote Engorde 3M-Enero" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Duración (meses)</label>
+                            <select id="lote-duracion" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option value="3">3 meses (Engorde Rápido)</option>
+                                <option value="6">6 meses (Estándar)</option>
+                                <option value="12">12 meses (Ciclo Completo)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button id="btn-crear-lote" class="mt-6 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">
+                                Crear Lote
+                            </button>
+                        </div>
+                    </div>
+                    <p id="lote-fecha-estimada" class="mt-3 text-sm text-gray-600">
+                        Fecha de inicio: <strong id="lote-fecha-inicio">Hoy</strong>. Fecha de venta estimada: <strong id="lote-fecha-venta-est">Se calculará al crear</strong>.
+                    </p>
+                </div>
+                
+                <h3 class="text-lg font-medium mb-3 mt-8">Lotes Activos</h3>
+                <p id="cargando-lotes" class="text-gray-500">Cargando lotes...</p>
+                <div id="lista-lotes" class="space-y-4">
+                    </div>
+            </div>
+
+        </div> </div>
 
     <script type="module">
         // Importamos solo las funciones que necesitamos
@@ -148,7 +241,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Referencias a los elementos del HTML
+        // Referencias a elementos del HTML
         const listaPendientesUI = document.getElementById('lista-pendientes');
         const cargandoPendientesUI = document.getElementById('cargando-pendientes');
         const formularioUI = document.getElementById('formulario-registro');
@@ -162,73 +255,93 @@
         const inputUltimoParto = document.getElementById('form-ultimo-parto');
         const inputFechaEstimada = document.getElementById('form-estimada-parto');
         const inputBuscador = document.getElementById('input-buscador');
-        
-        // ¡NUEVOS! Elementos del formulario
         const selectSexo = document.getElementById('form-sexo');
         const camposHembraUI = document.getElementById('campos-hembra');
         const inputPartos = document.getElementById('form-partos');
-
-
+        const campoEstadoMacho = document.getElementById('campo-estado-macho');
+        const selectEstadoMacho = document.getElementById('form-estado-macho');
+        const selectFiltroSexo = document.getElementById('select-filtro-sexo');
+        const listaPronosticoUI = document.getElementById('lista-pronostico');
+        const cargandoPronosticoUI = document.getElementById('cargando-pronostico');
+        
+        // ¡NUEVOS! Elementos para Lotes
+        const listaLotesUI = document.getElementById('lista-lotes');
+        const cargandoLotesUI = document.getElementById('cargando-lotes');
+        const btnCrearLote = document.getElementById('btn-crear-lote');
+        const inputLoteNombre = document.getElementById('lote-nombre');
+        const selectLoteDuracion = document.getElementById('lote-duracion');
+        
+        // Variables globales
         let uidsDeGanado = new Set();
-
+        let inventarioCache = []; 
+        let lotesCache = []; // Nuevo cache para lotes
 
         // --- FUNCIÓN DE INICIO (Autenticación) ---
         async function iniciarSistema() {
             try {
-                console.log("Autenticando la página web...");
                 cargandoPendientesUI.innerText = "Autenticando...";
                 cargandoInventarioUI.innerText = "Autenticando...";
+                cargandoLotesUI.innerText = "Autenticando...";
                 
                 await signInWithEmailAndPassword(auth, "enndels@gmail.com", "123456789");
                 console.log("¡Página web autenticada con éxito!");
 
-                await cargarInventario();
+                escucharInventario(); 
                 escucharEscaneosPendientes();
+                escucharLotes(); // ¡INICIAMOS LA ESCUCHA DE LOTES!
 
             } catch (error) {
                 console.error("¡Error fatal al autenticar la página!", error.code, error.message);
                 cargandoPendientesUI.innerText = "Error de autenticación.";
                 cargandoInventarioUI.innerText = "Error de autenticación.";
+                cargandoLotesUI.innerText = "Error de autenticación.";
             }
         }
+        
+        // --- LÓGICA DE TABS (PESTAÑAS) ---
+        document.getElementById('tab-nav').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-button')) {
+                const targetTab = e.target.dataset.tab;
 
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-        // --- ESCUCHAR ESCANEOS PENDIENTES (v4.11) ---
+                e.target.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                
+                if (targetTab === 'pronostico') {
+                    renderizarPronosticoPartos();
+                } else if (targetTab === 'lotes') {
+                    renderizarLotes();
+                } else if (targetTab === 'inventario') {
+                    renderizarInventario();
+                }
+            }
+        });
+
+        // --- ESCUCHAR ESCANEOS PENDIENTES (omitiendo código interno por brevedad, es igual a v4.15) ---
         function escucharEscaneosPendientes() {
             const scansRef = collection(db, "public_scans");
-            
             onSnapshot(scansRef, (snapshot) => {
-                
                 let hayPendientes = false;
+                listaPendientesUI.innerHTML = ''; 
 
                 snapshot.docs.forEach(async (doc) => {
                     const scan = doc.data();
                     const scanId = doc.id; 
                     
                     if (uidsDeGanado.has(scan.uid)) {
-                        // --- CASO B: VACA REPETIDA ---
-                        console.log(`Ganado existente detectado: ${scan.uid}`);
-                        
                         const vacaCard = document.getElementById(`vaca-${scan.uid}`);
                         if (vacaCard) {
                             vacaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             vacaCard.classList.add('highlight-animation');
-                            setTimeout(() => {
-                                vacaCard.classList.remove('highlight-animation');
-                            }, 2000);
+                            setTimeout(() => { vacaCard.classList.remove('highlight-animation'); }, 2000);
                         }
-                        
                         const scanRef = doc(db, "public_scans", scanId);
                         await deleteDoc(scanRef);
-
                     } else {
-                        // --- CASO A: GANADO NUEVO ---
                         hayPendientes = true;
-                        
-                        let timestampStr = "Fecha desconocida";
-                        if (scan.timestamp) {
-                            timestampStr = new Date(scan.timestamp).toLocaleString('es-GT');
-                        }
+                        let timestampStr = scan.timestamp ? new Date(scan.timestamp).toLocaleString('es-GT') : "Fecha desconocida";
 
                         const item = document.createElement('li');
                         item.className = "flex justify-between items-center p-3 bg-gray-50 rounded shadow-sm";
@@ -240,173 +353,118 @@
                         `;
                         listaPendientesUI.appendChild(item);
                     }
-                }); // Fin del forEach
+                }); 
 
-                if (!hayPendientes) {
-                    cargandoPendientesUI.innerText = "No hay escaneos pendientes.";
-                    listaPendientesUI.innerHTML = '';
-                } else {
-                    cargandoPendientesUI.style.display = 'none';
-                }
+                cargandoPendientesUI.style.display = hayPendientes ? 'none' : 'block';
+                if (!hayPendientes) cargandoPendientesUI.innerText = "No hay escaneos pendientes.";
             });
         }
 
-
-        // --- LÓGICA DEL FORMULARIO --- 
-        
-        // Función para limpiar y mostrar el formulario
+        // --- LÓGICA DEL FORMULARIO Y GUARDADO (igual a v4.15) --- 
         function mostrarFormulario(uid, scanId) {
+            // ... (código para mostrar/limpiar formulario) ...
             formularioTituloUI.innerText = scanId ? "Registrar Nuevo Ganado" : "Editar Ganado";
             document.getElementById('form-uid').value = uid;
             document.getElementById('form-scan-id').value = scanId || '';
             
-            // Limpiar campos generales
             document.getElementById('form-nombre').value = '';
             document.getElementById('form-peso').value = '';
             document.getElementById('form-edad-anos').value = 0;
             document.getElementById('form-edad-meses').value = 0;
-            selectSexo.value = 'hembra'; // Valor por defecto
+            selectSexo.value = 'hembra'; 
             
-            // Limpiar campos de hembra
             inputPartos.value = 0;
             selectEmbarazada.value = 'false';
             inputUltimoParto.value = '';
             inputFechaEstimada.value = '';
+            selectEstadoMacho.value = 'reproduccion';
             
-            // Mostrar campos de hembra por defecto y ocultar fecha estimada
             camposHembraUI.classList.remove('hidden');
             campoFechaEstimada.classList.add('hidden');
+            campoEstadoMacho.classList.add('hidden'); 
             
             formularioUI.classList.remove('hidden');
             formularioUI.scrollIntoView({ behavior: 'smooth' });
         }
-
-
-        // Mostrar formulario al hacer clic en "Registrar"
+        
+        // Event listeners para formulario
         listaPendientesUI.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-registrar')) {
                 mostrarFormulario(e.target.dataset.uid, e.target.dataset.scanId);
             }
         });
-
-        // Ocultar formulario al hacer clic en "Cancelar"
-        btnCancelar.addEventListener('click', () => {
-            formularioUI.classList.add('hidden');
-        });
-
-        // Mostrar/Ocultar "Fecha Estimada Parto"
+        btnCancelar.addEventListener('click', () => { formularioUI.classList.add('hidden'); });
         selectEmbarazada.addEventListener('change', (e) => {
-            if (e.target.value === 'true') {
-                campoFechaEstimada.classList.remove('hidden');
-            } else {
-                campoFechaEstimada.classList.add('hidden');
-                inputFechaEstimada.value = '';
-            }
+            if (e.target.value === 'true') { campoFechaEstimada.classList.remove('hidden'); } 
+            else { campoFechaEstimada.classList.add('hidden'); inputFechaEstimada.value = ''; }
         });
-
-        // --- ¡NUEVO! Lógica para ocultar/mostrar campos según el Sexo ---
         selectSexo.addEventListener('change', (e) => {
             if (e.target.value === 'macho') {
                 camposHembraUI.classList.add('hidden');
+                campoFechaEstimada.classList.add('hidden');
+                campoEstadoMacho.classList.remove('hidden');
             } else {
                 camposHembraUI.classList.remove('hidden');
+                campoEstadoMacho.classList.add('hidden');
             }
         });
-
-
-        // ==================================================================
-        // --- LÓGICA DE GUARDADO (¡MODIFICADA v4.13!) ---
-        // ==================================================================
+        
         btnGuardar.addEventListener('click', async () => {
+            // ... (código de guardado y validación igual a v4.15) ...
             const uid = document.getElementById('form-uid').value;
             const scanId = document.getElementById('form-scan-id').value; 
             
-            // Datos generales
             const nombre = document.getElementById('form-nombre').value;
             const sexo = selectSexo.value;
             const peso = parseInt(document.getElementById('form-peso').value) || 0;
             
-            // Datos de edad
             const edadAnos = parseInt(document.getElementById('form-edad-anos').value) || 0;
             const edadMeses = parseInt(document.getElementById('form-edad-meses').value) || 0;
             
             const edadTotalMeses = (edadAnos * 12) + edadMeses;
-            const edadDecimal = edadAnos + (edadMeses / 12); // Para display/cálculos
+            const edadDecimal = edadAnos + (edadMeses / 12); 
 
-            // Datos de hembra (Inicialmente vacíos o cero)
             let partos = 0;
             let estaEmbarazada = false;
             let ultimoParto = null;
             let estimadaParto = null;
+            let estadoMacho = null;
 
-
-            // --- VALIDACIONES INICIALES ---
-            if (!nombre || !uid) {
-                alert("Error: El UID o el Nombre están vacíos.");
+            if (!nombre || !uid || peso <= 0 || edadTotalMeses < 0 || edadAnos > 18) {
+                alert("Error: Verifica todos los campos (Nombre, UID y Peso deben ser válidos; Edad máx 18 años).");
                 return;
             }
-            if (peso <= 0) {
-                 alert("Error: El peso debe ser un número positivo.");
-                return;
-            }
-            if (edadTotalMeses < 0) {
-                alert("Error: La edad no puede ser negativa.");
-                return;
-            }
-            if (edadAnos > 18) { // Validación de Edad Máxima (en años)
-                alert("Error: La edad no puede ser mayor a 18 años.");
-                return;
-            }
-            // --- FIN VALIDACIONES INICIALES ---
-
             
-            // --- LÓGICA Y VALIDACIONES ESPECÍFICAS PARA HEMBRAS ---
             if (sexo === 'hembra') {
                 partos = parseInt(inputPartos.value) || 0;
                 estaEmbarazada = selectEmbarazada.value === 'true';
                 ultimoParto = inputUltimoParto.value || null;
                 estimadaParto = estaEmbarazada ? (inputFechaEstimada.value || null) : null;
 
-                // 1. Validación de Partos vs Edad (usando años)
                 if (partos > edadAnos) { 
                     alert("Error: El número de partos no puede ser mayor que la edad en años.");
                     return; 
                 }
-                
-                // 2. Validación de Edad Mínima para Embarazo (1 año o 12 meses)
                 if (estaEmbarazada && edadTotalMeses < 12) {
                     alert("Error: Una hembra debe tener al menos 1 año (12 meses) para estar registrada como embarazada.");
                     return;
                 }
+            } else if (sexo === 'macho') {
+                estadoMacho = selectEstadoMacho.value;
             }
 
-
-            // Creamos el objeto final (incluyendo los campos de hembra, que serán null/0 para machos)
             const datosGanado = {
-                uid: uid,
-                nombre: nombre, 
-                sexo: sexo,
-                peso: peso,
-                // Almacenamos la edad en años, meses y el decimal para el display
-                edadAnos: edadAnos,
-                edadMeses: edadMeses,
-                edadDecimal: parseFloat(edadDecimal.toFixed(2)),
-                
-                // Campos específicos de hembra
-                partos: partos,
-                embarazada: estaEmbarazada,
-                ultimoParto: ultimoParto, 
-                estimadaParto: estimadaParto
+                uid: uid, nombre: nombre, sexo: sexo, peso: peso,
+                edadAnos: edadAnos, edadMeses: edadMeses, edadDecimal: parseFloat(edadDecimal.toFixed(2)),
+                partos: partos, embarazada: estaEmbarazada, ultimoParto: ultimoParto, 
+                estimadaParto: estimadaParto, estadoMacho: estadoMacho
             };
 
-            
             try {
                 const ganadoRef = doc(db, "ganado", uid);
                 await setDoc(ganadoRef, datosGanado, { merge: true });
 
                 if (scanId) {
-                    uidsDeGanado.add(uid);
-                    
                     const scanRef = doc(db, "public_scans", scanId);
                     await deleteDoc(scanRef);
                     alert("¡Ganado registrado con éxito!");
@@ -415,41 +473,218 @@
                 }
                 
                 formularioUI.classList.add('hidden');
-                await cargarInventario(); 
-
             } catch (error) {
                 console.error("Error al guardar:", error);
                 alert("Error al guardar el ganado.");
             }
         });
 
-        // --- CARGAR INVENTARIO GENERAL (¡MODIFICADO v4.13!) --- 
-        async function cargarInventario() {
-            inventarioUI.innerHTML = '';
-            cargandoInventarioUI.innerText = 'Cargando inventario...';
+
+        // ==================================================================
+        // --- ESCUCHA CONTINUA DEL INVENTARIO (v4.16) --- 
+        // ==================================================================
+        function escucharInventario() {
+            const ganadoRef = collection(db, "ganado");
+
+            onSnapshot(ganadoRef, (querySnapshot) => {
+                cargandoInventarioUI.style.display = 'none';
+                uidsDeGanado.clear();
+                inventarioCache = []; 
+                
+                if (querySnapshot.empty) {
+                    cargandoInventarioUI.innerText = 'Aún no hay ganado registrado.';
+                    cargandoInventarioUI.style.display = 'block';
+                    inventarioUI.innerHTML = '';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    uidsDeGanado.add(doc.id);
+                    inventarioCache.push(doc.data());
+                });
+                
+                // Renderizamos todas las vistas que dependen del inventario
+                renderizarInventario(); 
+                if (document.getElementById('pronostico').classList.contains('active')) {
+                    renderizarPronosticoPartos();
+                }
+                // Si la pestaña de lotes estuviera activa, también se renderizaría aquí, pero su fuente principal es lotesCache.
+            });
+        }
+
+        // ==================================================================
+        // --- ¡NUEVO! LÓGICA DE LOTES DE VENTA (v4.16) ---
+        // ==================================================================
+        
+        // --- A. ESCUCHA CONTINUA DE LOTES ---
+        function escucharLotes() {
+            const lotesRef = collection(db, "lotes_venta");
+
+            onSnapshot(lotesRef, (querySnapshot) => {
+                cargandoLotesUI.style.display = 'none';
+                lotesCache = []; 
+                
+                if (querySnapshot.empty) {
+                    cargandoLotesUI.innerText = 'No hay lotes de venta activos.';
+                    cargandoLotesUI.style.display = 'block';
+                    listaLotesUI.innerHTML = '';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const lote = doc.data();
+                    lote.id = doc.id; // Guardamos el ID del documento
+                    lotesCache.push(lote);
+                });
+                
+                // Renderizamos la lista de lotes
+                renderizarLotes(); 
+            });
+        }
+        
+        // --- B. RENDERIZADO DE LOTES ---
+        function renderizarLotes() {
+            listaLotesUI.innerHTML = '';
             
-            uidsDeGanado.clear();
+            // Ordenamos los lotes por fecha de venta estimada (más cercana primero)
+            lotesCache.sort((a, b) => {
+                const fechaA = new Date(a.fechaVentaEstimada).getTime();
+                const fechaB = new Date(b.fechaVentaEstimada).getTime();
+                return fechaA - fechaB;
+            });
             
-            const querySnapshot = await getDocs(collection(db, "ganado"));
-            
-            if (querySnapshot.empty) {
-                cargandoInventarioUI.innerText = 'Aún no hay ganado registrado.';
+            if (lotesCache.length === 0) {
+                 listaLotesUI.innerHTML = '<p class="text-gray-600">No hay lotes de venta activos.</p>';
                 return;
             }
 
-            cargandoInventarioUI.style.display = 'none';
 
-            querySnapshot.forEach((doc) => {
-                const animal = doc.data();
-                const animalId = doc.id; 
+            lotesCache.forEach((lote) => {
+                const fechaVenta = new Date(lote.fechaVentaEstimada + 'T00:00:00');
+                const fechaInicio = new Date(lote.fechaInicio + 'T00:00:00');
                 
-                uidsDeGanado.add(animalId);
+                const diasRestantes = Math.ceil((fechaVenta.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                
+                let colorBorde = 'border-green-500'; 
+                if (diasRestantes <= 60) colorBorde = 'border-yellow-500';
+                if (diasRestantes <= 30) colorBorde = 'border-red-500';
+
+                const numAnimales = lote.uidsGanado ? lote.uidsGanado.length : 0;
+                
+                const item = document.createElement('div');
+                item.className = `p-4 bg-white border-4 rounded-lg shadow-md item-lote ${colorBorde}`;
+                item.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-bold text-orange-700">${lote.nombre}</h3>
+                        <span class="text-sm font-semibold text-gray-500">ID Lote: ${lote.id.substring(0, 8)}...</span>
+                    </div>
+                    <p class="mt-1">Duración: <strong>${lote.duracionEngorde} meses</strong></p>
+                    <p>Iniciado: ${fechaInicio.toLocaleDateString('es-GT')}</p>
+                    <p class="text-lg font-semibold text-blue-600">Venta Estimada: ${fechaVenta.toLocaleDateString('es-GT')}</p>
+                    
+                    <div class="mt-2 p-3 bg-gray-100 rounded">
+                        <p class="font-medium">Animales en Lote: <strong>${numAnimales}</strong></p>
+                        <p class="text-sm text-gray-600">${numAnimales > 0 ? lote.uidsGanado.join(', ') : 'No hay animales asignados'}</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button data-lote-id="${lote.id}" class="btn-eliminar-lote bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                            Eliminar Lote
+                        </button>
+                    </div>
+                `;
+                listaLotesUI.appendChild(item);
+            });
+        }
+        
+        // --- C. CREAR NUEVO LOTE ---
+        btnCrearLote.addEventListener('click', async () => {
+            const nombre = inputLoteNombre.value.trim();
+            const duracion = parseInt(selectLoteDuracion.value);
+
+            if (!nombre) {
+                alert("Por favor, ingresa un nombre para el lote.");
+                return;
+            }
+            if (isNaN(duracion) || duracion <= 0) {
+                 alert("Error en la duración del lote.");
+                return;
+            }
+            
+            const fechaInicio = new Date();
+            const fechaVentaEstimada = new Date(fechaInicio);
+            fechaVentaEstimada.setMonth(fechaVentaEstimada.getMonth() + duracion);
+            
+            // Formatear la fecha para Firebase (YYYY-MM-DD)
+            const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
+            const fechaVentaStr = fechaVentaEstimada.toISOString().split('T')[0];
+            
+            const nuevoLote = {
+                nombre: nombre,
+                duracionEngorde: duracion,
+                fechaInicio: fechaInicioStr,
+                fechaVentaEstimada: fechaVentaStr,
+                uidsGanado: [] // Lista de UIDs vacía
+            };
+
+            try {
+                // Firebase asignará un ID único automáticamente al documento
+                const lotesRef = collection(db, "lotes_venta");
+                await setDoc(doc(lotesRef), nuevoLote); 
+                
+                alert(`Lote "${nombre}" creado con éxito. Venta estimada: ${fechaVentaEstimada.toLocaleDateString('es-GT')}`);
+                inputLoteNombre.value = ''; // Limpiar campo
+                selectLoteDuracion.value = '3';
+                // El onSnapshot recarga la lista
+            } catch (error) {
+                console.error("Error al crear el lote:", error);
+                alert("Error al crear el lote.");
+            }
+        });
+        
+        // --- D. ELIMINAR LOTE ---
+        listaLotesUI.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('btn-eliminar-lote')) {
+                const loteId = e.target.dataset.loteId;
+                const confirmar = confirm(`¿Estás seguro de que quieres eliminar el lote? Los animales NO serán eliminados, pero ya no pertenecerán a este lote.`);
+                
+                if (confirmar) {
+                    try {
+                        const loteRef = doc(db, "lotes_venta", loteId);
+                        await deleteDoc(loteRef);
+                        alert("¡Lote eliminado con éxito!");
+                        // Nota: Faltaría actualizar el campo 'loteId' de los animales que pertenecían a él (se hará en el Paso 3)
+                    } catch (error) {
+                        console.error("Error al eliminar el lote:", error);
+                        alert("Error al eliminar el lote.");
+                    }
+                }
+            }
+        });
+
+        // ==================================================================
+        // --- FUNCIONES DE RENDERIZADO (Anteriores) ---
+        // ==================================================================
+        
+        // --- RENDERIZAR INVENTARIO GENERAL (igual a v4.15) ---
+        function renderizarInventario() {
+            inventarioUI.innerHTML = '';
+            const filtroSexo = selectFiltroSexo.value;
+            const terminoBusqueda = inputBuscador.value.toLowerCase();
+            
+            let listadoFiltrado = inventarioCache.filter(animal => {
+                const nombreUID = (animal.nombre + animal.uid).toLowerCase();
+                return (filtroSexo === 'todos' || animal.sexo === filtroSexo) &&
+                       (!terminoBusqueda || nombreUID.includes(terminoBusqueda));
+            });
+            
+            listadoFiltrado.forEach((animal) => {
+                const animalId = animal.uid; 
                 
                 const item = document.createElement('div');
                 item.id = `vaca-${animalId}`; 
                 item.className = 'p-4 bg-white border rounded-lg shadow-sm item-vaca';
 
-                // Formateo de Edad (ej: 2 años, 6 meses)
                 let edadTexto = '';
                 if (animal.edadAnos > 0) edadTexto += `${animal.edadAnos} años`;
                 if (animal.edadMeses > 0) {
@@ -459,44 +694,40 @@
                 if (edadTexto === '') edadTexto = `Menos de 1 mes`;
 
 
-                // Lógica y Display para HEMBRAS
                 let htmlCamposExtra = '';
+                let colorSexo = animal.sexo === 'hembra' ? 'text-pink-600' : 'text-blue-600';
+
                 if (animal.sexo === 'hembra') {
                     htmlCamposExtra += `<p>Partos: ${animal.partos}</p>`;
 
-                    if (animal.ultimoParto) {
-                        const fechaUltimoParto = new Date(animal.ultimoParto + 'T00:00:00');
-                        htmlCamposExtra += `<p class="mt-2">Último Parto: ${fechaUltimoParto.toLocaleDateString('es-GT')}</p>`;
-                    }
-                    
                     if (animal.embarazada) {
                         htmlCamposExtra += `<p>Embarazada: <strong class="text-green-600">Sí</strong></p>`;
-                        
                         if (animal.estimadaParto) {
                             const fechaEstimada = new Date(animal.estimadaParto + 'T00:00:00');
-                            htmlCamposExtra += `<p class="font-medium text-blue-700">Fecha Estimada Parto: ${fechaEstimada.toLocaleDateString('es-GT')}</p>`;
-
-                            const proximaOptimaPreño = new Date(fechaEstimada);
-                            proximaOptimaPreño.setDate(proximaOptimaPreño.getDate() + 60);
-                            htmlCamposExtra += `<p class="font-medium text-purple-700">Fecha Óptima Próx. Ciclo: ${proximaOptimaPreño.toLocaleDateString('es-GT')}</p>`;
+                            htmlCamposExtra += `<p class="font-medium text-blue-700">F. Estimada Parto: ${fechaEstimada.toLocaleDateString('es-GT')}</p>`;
                         }
-
                     } else {
                         htmlCamposExtra += `<p>Embarazada: No</p>`;
-                        if (animal.ultimoParto) {
-                            const fechaUltimoParto = new Date(animal.ultimoParto + 'T00:00:00');
-                            const fechaOptima = new Date(fechaUltimoParto);
-                            fechaOptima.setDate(fechaOptima.getDate() + 60); 
-                            
-                            htmlCamposExtra += `<p class="font-medium text-green-700">Fecha Óptima Preño: ${fechaOptima.toLocaleDateString('es-GT')}</p>`;
-                        }
                     }
-                } // Fin lógica de hembras
+                } else if (animal.sexo === 'macho') {
+                    htmlCamposExtra += `<p>Estado: <strong>${animal.estadoMacho === 'reproduccion' ? 'Reproducción' : 'Venta / Engorde'}</strong></p>`;
+                    
+                    // Botón para asignar a lote, visible si es Macho en Venta
+                    if (animal.estadoMacho === 'venta') {
+                        htmlCamposExtra += `
+                            <div class="mt-2">
+                                <button data-uid="${animalId}" class="btn-asignar-lote bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                    Asignar a Lote
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
 
                 
                 item.innerHTML = `
                     <h3 class="text-xl font-semibold text-blue-700">${animal.nombre} (UID: <span class="font-mono">${animal.uid}</span>)</h3>
-                    <p>Sexo: <strong>${animal.sexo.toUpperCase()}</strong></p>
+                    <p>Sexo: <strong class="${colorSexo}">${animal.sexo.toUpperCase()}</strong></p>
                     <p>Edad: ${edadTexto}</p>
                     <p>Peso: ${animal.peso} kg</p>
                     
@@ -515,10 +746,54 @@
             });
         }
         
-        // --- FUNCIÓN PARA ABRIR EL FORMULARIO DE EDICIÓN (¡MODIFICADO v4.13!) ---
+        // --- RENDERIZAR PRONÓSTICO DE PARTOS (igual a v4.15) ---
+        function renderizarPronosticoPartos() {
+            listaPronosticoUI.innerHTML = '';
+            cargandoPronosticoUI.style.display = 'none';
+
+            let listadoPartos = inventarioCache.filter(animal => 
+                animal.sexo === 'hembra' && animal.embarazada && animal.estimadaParto
+            );
+            
+            listadoPartos.sort((a, b) => {
+                const fechaA = new Date(a.estimadaParto).getTime();
+                const fechaB = new Date(b.estimadaParto).getTime();
+                return fechaA - fechaB;
+            });
+            
+            if (listadoPartos.length === 0) {
+                listaPronosticoUI.innerHTML = '<p class="text-gray-600">No hay hembras preñadas registradas con fecha estimada de parto.</p>';
+                return;
+            }
+
+            listadoPartos.forEach((animal) => {
+                const fechaEstimada = new Date(animal.estimadaParto + 'T00:00:00');
+                const fechaHoy = new Date();
+                
+                const diferenciaTiempo = fechaEstimada.getTime() - fechaHoy.getTime();
+                const diasRestantes = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+                
+                let colorClase = 'bg-green-100 border-green-400';
+                if (diasRestantes <= 30) colorClase = 'bg-red-100 border-red-500 font-bold';
+                else if (diasRestantes <= 60) colorClase = 'bg-yellow-100 border-yellow-500';
+
+                const item = document.createElement('div');
+                item.className = `p-4 border-l-4 rounded shadow-md ${colorClase}`;
+                item.innerHTML = `
+                    <h3 class="text-xl font-semibold text-gray-800">${animal.nombre} (UID: ${animal.uid})</h3>
+                    <p class="mt-1">Parto Estimado: <strong class="text-lg">${fechaEstimada.toLocaleDateString('es-GT')}</strong></p>
+                    <p>Días restantes: <strong class="text-lg">${diasRestantes > 0 ? diasRestantes : '¡Parto inminente!'}</strong></p>
+                    <button data-uid="${animal.uid}" class="btn-editar bg-blue-600 text-white px-3 py-1 mt-2 rounded text-sm hover:bg-blue-700">
+                        Ver / Editar
+                    </button>
+                `;
+                listaPronosticoUI.appendChild(item);
+            });
+        }
+        
+        // --- FUNCIÓN PARA ABRIR EL FORMULARIO DE EDICIÓN (igual a v4.15) ---
         async function abrirFormularioEdicion(uid) {
             try {
-                console.log(`Abriendo edición para: ${uid}`);
                 const animalRef = doc(db, "ganado", uid);
                 const animalSnap = await getDoc(animalRef);
 
@@ -528,20 +803,17 @@
                 }
 
                 const animal = animalSnap.data();
-
-                mostrarFormulario(animal.uid, null); // Reutilizamos la función para limpiar
+                mostrarFormulario(animal.uid, null); 
                 
-                // Cargar datos generales
                 selectSexo.value = animal.sexo;
                 document.getElementById('form-nombre').value = animal.nombre || '';
                 document.getElementById('form-peso').value = animal.peso || 0;
                 document.getElementById('form-edad-anos').value = animal.edadAnos || 0;
                 document.getElementById('form-edad-meses').value = animal.edadMeses || 0;
-
-
-                // Cargar y mostrar/ocultar campos de hembra
+                
                 if (animal.sexo === 'hembra') {
                     camposHembraUI.classList.remove('hidden');
+                    campoEstadoMacho.classList.add('hidden');
                     inputPartos.value = animal.partos || 0;
                     selectEmbarazada.value = animal.embarazada ? 'true' : 'false';
                     inputUltimoParto.value = animal.ultimoParto || '';
@@ -552,8 +824,10 @@
                     } else {
                         campoFechaEstimada.classList.add('hidden');
                     }
-                } else {
+                } else if (animal.sexo === 'macho') {
                     camposHembraUI.classList.add('hidden');
+                    campoEstadoMacho.classList.remove('hidden');
+                    selectEstadoMacho.value = animal.estadoMacho || 'reproduccion';
                 }
 
             } catch (error) {
@@ -562,53 +836,55 @@
             }
         }
 
+        // --- LÓGICA PARA ELIMINAR Y EDITAR (Combinada para todas las listas) ---
+        const todasLasListas = [inventarioUI, listaPronosticoUI, listaLotesUI];
 
-        // --- LÓGICA DEL BUSCADOR ---
-        inputBuscador.addEventListener('input', (e) => {
-            const terminoBusqueda = e.target.value.toLowerCase();
-            const itemsVaca = inventarioUI.querySelectorAll('.item-vaca'); 
-            
-            itemsVaca.forEach(item => {
-                const nombreVaca = item.querySelector('h3').textContent.toLowerCase();
+        todasLasListas.forEach(lista => {
+            lista.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('btn-eliminar')) {
+                    const uid = e.target.dataset.uid;
+                    const confirmar = confirm(`¿Estás seguro de que quieres eliminar este animal con UID: ${uid}? Esta acción no se puede deshacer.`);
+                    
+                    if (confirmar) {
+                        try {
+                            const animalRef = doc(db, "ganado", uid);
+                            await deleteDoc(animalRef);
+                            alert("¡Ganado eliminado con éxito!");
+                        } catch (error) {
+                            console.error("Error al eliminar el animal:", error);
+                            alert("Error al eliminar el animal.");
+                        }
+                    }
+                }
+
+                if (e.target.classList.contains('btn-editar')) {
+                    const uid = e.target.dataset.uid;
+                    await abrirFormularioEdicion(uid);
+                }
                 
-                if (nombreVaca.includes(terminoBusqueda)) {
-                    item.style.display = 'block'; 
-                } else {
-                    item.style.display = 'none'; 
+                // --- NUEVO: ASIGNAR A LOTE (Sub-paso 2.1) ---
+                if (e.target.classList.contains('btn-asignar-lote')) {
+                    const uid = e.target.dataset.uid;
+                    asignarAMachoVenta(uid);
                 }
             });
         });
-
-        // --- LÓGICA PARA ELIMINAR Y EDITAR ---
-        inventarioUI.addEventListener('click', async (e) => {
+        
+        // --- FUNCIÓN TEMPORAL PARA ASIGNAR A LOTE (Se mejorará en el Paso 3) ---
+        function asignarAMachoVenta(uid) {
+            if (lotesCache.length === 0) {
+                alert("No hay lotes de venta creados. Por favor, crea un lote primero en la pestaña 'Lotes de Venta'.");
+                return;
+            }
             
-            if (e.target.classList.contains('btn-eliminar')) {
-                const uid = e.target.dataset.uid;
-                const confirmar = confirm(`¿Estás seguro de que quieres eliminar este animal con UID: ${uid}? Esta acción no se puede deshacer.`);
-                
-                if (confirmar) {
-                    try {
-                        console.log(`Eliminando animal: ${uid}`);
-                        const animalRef = doc(db, "ganado", uid);
-                        await deleteDoc(animalRef);
+            // Lógica simple: si hay lotes, ir a la pestaña de lotes para elegir (lo automatizaremos en el paso siguiente)
+            alert(`Animal ${uid} listo para ser asignado. Debes ir a la pestaña 'Lotes de Venta' y elegir a cuál lote pertenece.`);
+            // Para el Paso 3: mostraremos un modal con la lista de lotes para que elijas.
+        }
 
-                        uidsDeGanado.delete(uid);
-                        
-                        alert("¡Ganado eliminado con éxito!");
-                        await cargarInventario(); 
-                        
-                    } catch (error) {
-                        console.error("Error al eliminar el animal:", error);
-                        alert("Error al eliminar el animal.");
-                    }
-                }
-            }
-
-            if (e.target.classList.contains('btn-editar')) {
-                const uid = e.target.dataset.uid;
-                await abrirFormularioEdicion(uid);
-            }
-        });
+        // --- LÓGICA DEL BUSCADOR Y FILTROS ---
+        inputBuscador.addEventListener('input', renderizarInventario);
+        selectFiltroSexo.addEventListener('change', renderizarInventario);
 
         // --- INICIAR TODO ---
         iniciarSistema();
