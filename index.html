@@ -55,10 +55,17 @@
             background-color: white;
             padding: 24px;
             border-radius: 8px;
-            /* Ancho responsivo: 95% en móvil, 90% en PC */
             width: 95%; 
             max-width: 500px; /* Tamaño por defecto */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+            /* =======================================================
+              ¡CAMBIO CLAVE AQUÍ!
+              Estas 2 líneas arreglan el problema de scroll en el modal.
+              =======================================================
+            */
+            max-height: 90vh; /* Altura máxima del 90% de la pantalla */
+            overflow-y: auto;   /* Scroll vertical si el contenido es muy alto */
         }
         
         /* Media query para pantallas más grandes (md: 768px) */
