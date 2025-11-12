@@ -8,10 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Animación de "flash" o "parpadeo" */
         @keyframes highlight-flash {
             0% { background-color: white; }
-            30% { background-color: #dbeafe; } /* Un azul muy claro */
+            30% { background-color: #dbeafe; }
             100% { background-color: white; }
         }
         
@@ -37,9 +36,9 @@
         <hr class="my-8">
 
         <div id="formulario-registro" class="hidden bg-blue-50 p-6 rounded-lg">
-            <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4">Registrar Nueva Vaca</h2>
+            <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4">Registrar Ganado</h2>
             
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">UID</label>
                     <input type="text" id="form-uid" readonly class="mt-1 block w-full p-2 bg-gray-200 border-gray-300 rounded-md shadow-sm">
@@ -50,12 +49,31 @@
                     <input type="text" id="form-nombre" placeholder="Ej: Manchitas" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Sexo</label>
+                    <select id="form-sexo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="hembra">Hembra</option>
+                        <option value="macho">Macho</option>
+                    </select>
+                </div>
+                
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Edad (años)</label>
-                    <input type="number" id="form-edad" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="form-edad-anos" value="0" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Edad (meses)</label>
+                    <input type="number" id="form-edad-meses" value="0" min="0" max="11" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
+                    <input type="number" id="form-peso" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+            </div>
+
+            <div id="campos-hembra" class="grid grid-cols-3 gap-4 mt-4">
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Número de Partos</label>
-                    <input type="number" id="form-partos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="form-partos" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 
                 <div>
@@ -71,14 +89,14 @@
                     <input type="date" id="form-ultimo-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 
-                <div id="campo-fecha-estimada" class="hidden">
+                <div id="campo-fecha-estimada" class="hidden col-span-1">
                     <label class="block text-sm font-medium text-gray-700">Fecha estimada del parto</label>
                     <input type="date" id="form-estimada-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
             </div>
 
             <div class="mt-6 flex gap-4">
-                <button id="btn-guardar" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar Vaca</button>
+                <button id="btn-guardar" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar Ganado</button>
                 <button id="btn-cancelar" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancelar</button>
             </div>
         </div>
@@ -141,11 +159,16 @@
         const cargandoInventarioUI = document.getElementById('cargando-inventario');
         const selectEmbarazada = document.getElementById('form-embarazada');
         const campoFechaEstimada = document.getElementById('campo-fecha-estimada');
-        const inputFechaEstimada = document.getElementById('form-estimada-parto');
         const inputUltimoParto = document.getElementById('form-ultimo-parto');
+        const inputFechaEstimada = document.getElementById('form-estimada-parto');
         const inputBuscador = document.getElementById('input-buscador');
+        
+        // ¡NUEVOS! Elementos del formulario
+        const selectSexo = document.getElementById('form-sexo');
+        const camposHembraUI = document.getElementById('campos-hembra');
+        const inputPartos = document.getElementById('form-partos');
 
-        // --- ¡NUEVO! "Memoria" para guardar los UIDs del inventario ---
+
         let uidsDeGanado = new Set();
 
 
@@ -159,12 +182,7 @@
                 await signInWithEmailAndPassword(auth, "enndels@gmail.com", "123456789");
                 console.log("¡Página web autenticada con éxito!");
 
-                // ¡IMPORTANTE! Cargamos el inventario PRIMERO
-                // para llenar nuestra "memoria" de UIDs.
                 await cargarInventario();
-                
-                // SOLO DESPUÉS de cargar el inventario, 
-                // empezamos a escuchar los nuevos escaneos.
                 escucharEscaneosPendientes();
 
             } catch (error) {
@@ -175,50 +193,36 @@
         }
 
 
-        // ==================================================================
-        // --- ESCUCHAR ESCANEOS PENDIENTES (¡MODIFICADO v4.11!) ---
-        // ==================================================================
+        // --- ESCUCHAR ESCANEOS PENDIENTES (v4.11) ---
         function escucharEscaneosPendientes() {
             const scansRef = collection(db, "public_scans");
             
-            // Este 'oyente' se activa cada vez que algo se AÑADE a 'public_scans'
             onSnapshot(scansRef, (snapshot) => {
                 
                 let hayPendientes = false;
 
                 snapshot.docs.forEach(async (doc) => {
                     const scan = doc.data();
-                    const scanId = doc.id; // ID del documento en 'public_scans'
+                    const scanId = doc.id; 
                     
-                    // --- ¡NUEVA LÓGICA INTELIGENTE! ---
-                    // Comprobamos si el UID escaneado YA está en nuestra "memoria"
                     if (uidsDeGanado.has(scan.uid)) {
                         // --- CASO B: VACA REPETIDA ---
-                        console.log(`Vaca existente detectada: ${scan.uid}`);
+                        console.log(`Ganado existente detectado: ${scan.uid}`);
                         
-                        // 1. Encontrar la tarjeta de la vaca en el inventario
                         const vacaCard = document.getElementById(`vaca-${scan.uid}`);
                         if (vacaCard) {
-                            // 2. Desplazarse a la tarjeta
                             vacaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            
-                            // 3. Aplicar la animación de resaltado
                             vacaCard.classList.add('highlight-animation');
-                            
-                            // 4. Quitar la clase de animación después de 2 segundos
                             setTimeout(() => {
                                 vacaCard.classList.remove('highlight-animation');
                             }, 2000);
                         }
                         
-                        // 5. Borrar el escaneo de 'public_scans' (ya lo procesamos)
                         const scanRef = doc(db, "public_scans", scanId);
                         await deleteDoc(scanRef);
 
                     } else {
-                        // --- CASO A: VACA NUEVA ---
-                        // Esta vaca no está en el inventario, así que la mostramos
-                        // en la lista de "Pendientes".
+                        // --- CASO A: GANADO NUEVO ---
                         hayPendientes = true;
                         
                         let timestampStr = "Fecha desconocida";
@@ -238,7 +242,6 @@
                     }
                 }); // Fin del forEach
 
-                // Limpieza final de la UI de "Pendientes"
                 if (!hayPendientes) {
                     cargandoPendientesUI.innerText = "No hay escaneos pendientes.";
                     listaPendientesUI.innerHTML = '';
@@ -251,23 +254,38 @@
 
         // --- LÓGICA DEL FORMULARIO --- 
         
+        // Función para limpiar y mostrar el formulario
+        function mostrarFormulario(uid, scanId) {
+            formularioTituloUI.innerText = scanId ? "Registrar Nuevo Ganado" : "Editar Ganado";
+            document.getElementById('form-uid').value = uid;
+            document.getElementById('form-scan-id').value = scanId || '';
+            
+            // Limpiar campos generales
+            document.getElementById('form-nombre').value = '';
+            document.getElementById('form-peso').value = '';
+            document.getElementById('form-edad-anos').value = 0;
+            document.getElementById('form-edad-meses').value = 0;
+            selectSexo.value = 'hembra'; // Valor por defecto
+            
+            // Limpiar campos de hembra
+            inputPartos.value = 0;
+            selectEmbarazada.value = 'false';
+            inputUltimoParto.value = '';
+            inputFechaEstimada.value = '';
+            
+            // Mostrar campos de hembra por defecto y ocultar fecha estimada
+            camposHembraUI.classList.remove('hidden');
+            campoFechaEstimada.classList.add('hidden');
+            
+            formularioUI.classList.remove('hidden');
+            formularioUI.scrollIntoView({ behavior: 'smooth' });
+        }
+
+
         // Mostrar formulario al hacer clic en "Registrar"
         listaPendientesUI.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-registrar')) {
-                formularioTituloUI.innerText = "Registrar Nueva Vaca";
-                document.getElementById('form-uid').value = e.target.dataset.uid;
-                document.getElementById('form-scan-id').value = e.target.dataset.scanId;
-                
-                document.getElementById('form-nombre').value = '';
-                document.getElementById('form-edad').value = '';
-                document.getElementById('form-partos').value = '';
-                selectEmbarazada.value = 'false';
-                inputUltimoParto.value = '';
-                inputFechaEstimada.value = '';
-                
-                campoFechaEstimada.classList.add('hidden');
-                formularioUI.classList.remove('hidden');
-                formularioUI.scrollIntoView({ behavior: 'smooth' });
+                mostrarFormulario(e.target.dataset.uid, e.target.dataset.scanId);
             }
         });
 
@@ -286,59 +304,130 @@
             }
         });
 
-        // LÓGICA DE GUARDADO
+        // --- ¡NUEVO! Lógica para ocultar/mostrar campos según el Sexo ---
+        selectSexo.addEventListener('change', (e) => {
+            if (e.target.value === 'macho') {
+                camposHembraUI.classList.add('hidden');
+            } else {
+                camposHembraUI.classList.remove('hidden');
+            }
+        });
+
+
+        // ==================================================================
+        // --- LÓGICA DE GUARDADO (¡MODIFICADA v4.13!) ---
+        // ==================================================================
         btnGuardar.addEventListener('click', async () => {
             const uid = document.getElementById('form-uid').value;
             const scanId = document.getElementById('form-scan-id').value; 
-            const estaEmbarazada = selectEmbarazada.value === 'true';
             
-            const datosVaca = {
-                uid: uid,
-                nombre: document.getElementById('form-nombre').value,
-                edad: parseInt(document.getElementById('form-edad').value) || 0,
-                partos: parseInt(document.getElementById('form-partos').value) || 0,
-                embarazada: estaEmbarazada,
-                ultimoParto: inputUltimoParto.value || null, 
-                estimadaParto: estaEmbarazada ? (inputFechaEstimada.value || null) : null
-            };
+            // Datos generales
+            const nombre = document.getElementById('form-nombre').value;
+            const sexo = selectSexo.value;
+            const peso = parseInt(document.getElementById('form-peso').value) || 0;
+            
+            // Datos de edad
+            const edadAnos = parseInt(document.getElementById('form-edad-anos').value) || 0;
+            const edadMeses = parseInt(document.getElementById('form-edad-meses').value) || 0;
+            
+            const edadTotalMeses = (edadAnos * 12) + edadMeses;
+            const edadDecimal = edadAnos + (edadMeses / 12); // Para display/cálculos
 
-            if (!datosVaca.nombre || !uid) {
+            // Datos de hembra (Inicialmente vacíos o cero)
+            let partos = 0;
+            let estaEmbarazada = false;
+            let ultimoParto = null;
+            let estimadaParto = null;
+
+
+            // --- VALIDACIONES INICIALES ---
+            if (!nombre || !uid) {
                 alert("Error: El UID o el Nombre están vacíos.");
                 return;
             }
+            if (peso <= 0) {
+                 alert("Error: El peso debe ser un número positivo.");
+                return;
+            }
+            if (edadTotalMeses < 0) {
+                alert("Error: La edad no puede ser negativa.");
+                return;
+            }
+            if (edadAnos > 18) { // Validación de Edad Máxima (en años)
+                alert("Error: La edad no puede ser mayor a 18 años.");
+                return;
+            }
+            // --- FIN VALIDACIONES INICIALES ---
 
+            
+            // --- LÓGICA Y VALIDACIONES ESPECÍFICAS PARA HEMBRAS ---
+            if (sexo === 'hembra') {
+                partos = parseInt(inputPartos.value) || 0;
+                estaEmbarazada = selectEmbarazada.value === 'true';
+                ultimoParto = inputUltimoParto.value || null;
+                estimadaParto = estaEmbarazada ? (inputFechaEstimada.value || null) : null;
+
+                // 1. Validación de Partos vs Edad (usando años)
+                if (partos > edadAnos) { 
+                    alert("Error: El número de partos no puede ser mayor que la edad en años.");
+                    return; 
+                }
+                
+                // 2. Validación de Edad Mínima para Embarazo (1 año o 12 meses)
+                if (estaEmbarazada && edadTotalMeses < 12) {
+                    alert("Error: Una hembra debe tener al menos 1 año (12 meses) para estar registrada como embarazada.");
+                    return;
+                }
+            }
+
+
+            // Creamos el objeto final (incluyendo los campos de hembra, que serán null/0 para machos)
+            const datosGanado = {
+                uid: uid,
+                nombre: nombre, 
+                sexo: sexo,
+                peso: peso,
+                // Almacenamos la edad en años, meses y el decimal para el display
+                edadAnos: edadAnos,
+                edadMeses: edadMeses,
+                edadDecimal: parseFloat(edadDecimal.toFixed(2)),
+                
+                // Campos específicos de hembra
+                partos: partos,
+                embarazada: estaEmbarazada,
+                ultimoParto: ultimoParto, 
+                estimadaParto: estimadaParto
+            };
+
+            
             try {
-                const vacaRef = doc(db, "ganado", uid);
-                await setDoc(vacaRef, datosVaca, { merge: true });
+                const ganadoRef = doc(db, "ganado", uid);
+                await setDoc(ganadoRef, datosGanado, { merge: true });
 
                 if (scanId) {
-                    // --- ¡NUEVO! Añadir el UID a la "memoria" ---
                     uidsDeGanado.add(uid);
                     
                     const scanRef = doc(db, "public_scans", scanId);
                     await deleteDoc(scanRef);
-                    alert("¡Vaca registrada con éxito!");
+                    alert("¡Ganado registrado con éxito!");
                 } else {
-                    alert("¡Vaca actualizada con éxito!");
+                    alert("¡Ganado actualizado con éxito!");
                 }
                 
                 formularioUI.classList.add('hidden');
-                await cargarInventario(); // Usamos await para asegurar que la "memoria" esté actualizada
+                await cargarInventario(); 
 
             } catch (error) {
                 console.error("Error al guardar:", error);
-                alert("Error al guardar la vaca.");
+                alert("Error al guardar el ganado.");
             }
         });
 
-        // ==================================================================
-        // --- CARGAR INVENTARIO GENERAL (¡MODIFICADO v4.11!) --- 
-        // ==================================================================
+        // --- CARGAR INVENTARIO GENERAL (¡MODIFICADO v4.13!) --- 
         async function cargarInventario() {
             inventarioUI.innerHTML = '';
             cargandoInventarioUI.innerText = 'Cargando inventario...';
             
-            // --- ¡NUEVO! Limpiamos la "memoria" antes de recargar ---
             uidsDeGanado.clear();
             
             const querySnapshot = await getDocs(collection(db, "ganado"));
@@ -351,62 +440,73 @@
             cargandoInventarioUI.style.display = 'none';
 
             querySnapshot.forEach((doc) => {
-                const vaca = doc.data();
-                const vacaId = doc.id; // El ID del documento (que es el UID)
+                const animal = doc.data();
+                const animalId = doc.id; 
                 
-                // --- ¡NUEVO! Añadimos el UID a la "memoria" ---
-                uidsDeGanado.add(vacaId);
+                uidsDeGanado.add(animalId);
                 
                 const item = document.createElement('div');
-                // --- ¡NUEVO! Añadimos un ID único a la tarjeta ---
-                item.id = `vaca-${vacaId}`; 
+                item.id = `vaca-${animalId}`; 
                 item.className = 'p-4 bg-white border rounded-lg shadow-sm item-vaca';
 
-                // --- Lógica de Fechas (v4.10) ---
+                // Formateo de Edad (ej: 2 años, 6 meses)
+                let edadTexto = '';
+                if (animal.edadAnos > 0) edadTexto += `${animal.edadAnos} años`;
+                if (animal.edadMeses > 0) {
+                    if (animal.edadAnos > 0) edadTexto += `, `;
+                    edadTexto += `${animal.edadMeses} meses`;
+                }
+                if (edadTexto === '') edadTexto = `Menos de 1 mes`;
+
+
+                // Lógica y Display para HEMBRAS
                 let htmlCamposExtra = '';
+                if (animal.sexo === 'hembra') {
+                    htmlCamposExtra += `<p>Partos: ${animal.partos}</p>`;
 
-                if (vaca.ultimoParto) {
-                    const fechaUltimoParto = new Date(vaca.ultimoParto + 'T00:00:00');
-                    htmlCamposExtra += `<p class="mt-2">Último Parto: ${fechaUltimoParto.toLocaleDateString('es-GT')}</p>`;
-                }
-                
-                if (vaca.embarazada) {
-                    htmlCamposExtra += `<p>Embarazada: <strong class="text-green-600">Sí</strong></p>`;
+                    if (animal.ultimoParto) {
+                        const fechaUltimoParto = new Date(animal.ultimoParto + 'T00:00:00');
+                        htmlCamposExtra += `<p class="mt-2">Último Parto: ${fechaUltimoParto.toLocaleDateString('es-GT')}</p>`;
+                    }
                     
-                    if (vaca.estimadaParto) {
-                        const fechaEstimada = new Date(vaca.estimadaParto + 'T00:00:00');
-                        htmlCamposExtra += `<p class="font-medium text-blue-700">Fecha Estimada Parto: ${fechaEstimada.toLocaleDateString('es-GT')}</p>`;
-
-                        const proximaOptimaPreño = new Date(fechaEstimada);
-                        proximaOptimaPreño.setDate(proximaOptimaPreño.getDate() + 60);
-                        htmlCamposExtra += `<p class="font-medium text-purple-700">Fecha Óptima Próx. Ciclo: ${proximaOptimaPreño.toLocaleDateString('es-GT')}</p>`;
-                    }
-
-                } else {
-                    htmlCamposExtra += `<p>Embarazada: No</p>`;
-                    if (vaca.ultimoParto) {
-                        const fechaUltimoParto = new Date(vaca.ultimoParto + 'T00:00:00');
-                        const fechaOptima = new Date(fechaUltimoParto);
-                        fechaOptima.setDate(fechaOptima.getDate() + 60); 
+                    if (animal.embarazada) {
+                        htmlCamposExtra += `<p>Embarazada: <strong class="text-green-600">Sí</strong></p>`;
                         
-                        htmlCamposExtra += `<p class="font-medium text-green-700">Fecha Óptima Preño: ${fechaOptima.toLocaleDateString('es-GT')}</p>`;
+                        if (animal.estimadaParto) {
+                            const fechaEstimada = new Date(animal.estimadaParto + 'T00:00:00');
+                            htmlCamposExtra += `<p class="font-medium text-blue-700">Fecha Estimada Parto: ${fechaEstimada.toLocaleDateString('es-GT')}</p>`;
+
+                            const proximaOptimaPreño = new Date(fechaEstimada);
+                            proximaOptimaPreño.setDate(proximaOptimaPreño.getDate() + 60);
+                            htmlCamposExtra += `<p class="font-medium text-purple-700">Fecha Óptima Próx. Ciclo: ${proximaOptimaPreño.toLocaleDateString('es-GT')}</p>`;
+                        }
+
+                    } else {
+                        htmlCamposExtra += `<p>Embarazada: No</p>`;
+                        if (animal.ultimoParto) {
+                            const fechaUltimoParto = new Date(animal.ultimoParto + 'T00:00:00');
+                            const fechaOptima = new Date(fechaUltimoParto);
+                            fechaOptima.setDate(fechaOptima.getDate() + 60); 
+                            
+                            htmlCamposExtra += `<p class="font-medium text-green-700">Fecha Óptima Preño: ${fechaOptima.toLocaleDateString('es-GT')}</p>`;
+                        }
                     }
-                }
-                // --- Fin de la lógica de fechas ---
+                } // Fin lógica de hembras
 
-
+                
                 item.innerHTML = `
-                    <h3 class="text-xl font-semibold text-blue-700">${vaca.nombre} (UID: <span class="font-mono">${vaca.uid}</span>)</h3>
-                    <p>Edad: ${vaca.edad} años</p>
-                    <p>Partos: ${vaca.partos}</p>
+                    <h3 class="text-xl font-semibold text-blue-700">${animal.nombre} (UID: <span class="font-mono">${animal.uid}</span>)</h3>
+                    <p>Sexo: <strong>${animal.sexo.toUpperCase()}</strong></p>
+                    <p>Edad: ${edadTexto}</p>
+                    <p>Peso: ${animal.peso} kg</p>
                     
                     ${htmlCamposExtra} 
                     
                     <div class="mt-2">
-                        <button data-uid="${vacaId}" class="btn-editar bg-yellow-500 text-white px-3 py-1 rounded text-sm">
+                        <button data-uid="${animalId}" class="btn-editar bg-yellow-500 text-white px-3 py-1 rounded text-sm">
                             Editar
                         </button>
-                        <button data-uid="${vacaId}" class="btn-eliminar bg-red-500 text-white px-3 py-1 rounded text-sm">
+                        <button data-uid="${animalId}" class="btn-eliminar bg-red-500 text-white px-3 py-1 rounded text-sm">
                             Eliminar
                         </button>
                     </div>
@@ -415,42 +515,50 @@
             });
         }
         
-        // --- FUNCIÓN PARA ABRIR EL FORMULARIO DE EDICIÓN ---
+        // --- FUNCIÓN PARA ABRIR EL FORMULARIO DE EDICIÓN (¡MODIFICADO v4.13!) ---
         async function abrirFormularioEdicion(uid) {
             try {
                 console.log(`Abriendo edición para: ${uid}`);
-                const vacaRef = doc(db, "ganado", uid);
-                const vacaSnap = await getDoc(vacaRef);
+                const animalRef = doc(db, "ganado", uid);
+                const animalSnap = await getDoc(animalRef);
 
-                if (!vacaSnap.exists()) {
-                    alert("Error: No se encontró la vaca para editar.");
+                if (!animalSnap.exists()) {
+                    alert("Error: No se encontró el animal para editar.");
                     return;
                 }
 
-                const vaca = vacaSnap.data();
+                const animal = animalSnap.data();
 
-                formularioTituloUI.innerText = "Editar Vaca";
-                document.getElementById('form-uid').value = vaca.uid;
-                document.getElementById('form-scan-id').value = ''; // Modo edición
-                document.getElementById('form-nombre').value = vaca.nombre || '';
-                document.getElementById('form-edad').value = vaca.edad || 0;
-                document.getElementById('form-partos').value = vaca.partos || 0;
-                selectEmbarazada.value = vaca.embarazada ? 'true' : 'false';
-                inputUltimoParto.value = vaca.ultimoParto || '';
-                inputFechaEstimada.value = vaca.estimadaParto || '';
-
-                if (vaca.embarazada) {
-                    campoFechaEstimada.classList.remove('hidden');
-                } else {
-                    campoFechaEstimada.classList.add('hidden');
-                }
+                mostrarFormulario(animal.uid, null); // Reutilizamos la función para limpiar
                 
-                formularioUI.classList.remove('hidden');
-                formularioUI.scrollIntoView({ behavior: 'smooth' });
+                // Cargar datos generales
+                selectSexo.value = animal.sexo;
+                document.getElementById('form-nombre').value = animal.nombre || '';
+                document.getElementById('form-peso').value = animal.peso || 0;
+                document.getElementById('form-edad-anos').value = animal.edadAnos || 0;
+                document.getElementById('form-edad-meses').value = animal.edadMeses || 0;
+
+
+                // Cargar y mostrar/ocultar campos de hembra
+                if (animal.sexo === 'hembra') {
+                    camposHembraUI.classList.remove('hidden');
+                    inputPartos.value = animal.partos || 0;
+                    selectEmbarazada.value = animal.embarazada ? 'true' : 'false';
+                    inputUltimoParto.value = animal.ultimoParto || '';
+                    inputFechaEstimada.value = animal.estimadaParto || '';
+
+                    if (animal.embarazada) {
+                        campoFechaEstimada.classList.remove('hidden');
+                    } else {
+                        campoFechaEstimada.classList.add('hidden');
+                    }
+                } else {
+                    camposHembraUI.classList.add('hidden');
+                }
 
             } catch (error) {
                 console.error("Error al cargar datos para editar:", error);
-                alert("No se pudieron cargar los datos de la vaca.");
+                alert("No se pudieron cargar los datos del ganado.");
             }
         }
 
@@ -476,23 +584,22 @@
             
             if (e.target.classList.contains('btn-eliminar')) {
                 const uid = e.target.dataset.uid;
-                const confirmar = confirm(`¿Estás seguro de que quieres eliminar la vaca con UID: ${uid}? Esta acción no se puede deshacer.`);
+                const confirmar = confirm(`¿Estás seguro de que quieres eliminar este animal con UID: ${uid}? Esta acción no se puede deshacer.`);
                 
                 if (confirmar) {
                     try {
-                        console.log(`Eliminando vaca: ${uid}`);
-                        const vacaRef = doc(db, "ganado", uid);
-                        await deleteDoc(vacaRef);
+                        console.log(`Eliminando animal: ${uid}`);
+                        const animalRef = doc(db, "ganado", uid);
+                        await deleteDoc(animalRef);
 
-                        // --- ¡NUEVO! Quitar de la "memoria" ---
                         uidsDeGanado.delete(uid);
                         
-                        alert("¡Vaca eliminada con éxito!");
-                        await cargarInventario(); // Recargamos
+                        alert("¡Ganado eliminado con éxito!");
+                        await cargarInventario(); 
                         
                     } catch (error) {
-                        console.error("Error al eliminar la vaca:", error);
-                        alert("Error al eliminar la vaca.");
+                        console.error("Error al eliminar el animal:", error);
+                        alert("Error al eliminar el animal.");
                     }
                 }
             }
