@@ -56,12 +56,16 @@
             padding: 24px;
             border-radius: 8px;
             width: 90%;
-            max-width: 500px;
+            max-width: 500px; /* Tamaño por defecto */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         /* Modal de detalles del lote es más grande */
         #modal-detalle-lote .modal-content {
             max-width: 800px;
+        }
+        /* Modal del ganado (edición/registro) es un poco más grande para el formulario */
+        #modal-ganado .modal-content {
+            max-width: 650px; 
         }
     </style>
 
@@ -81,92 +85,17 @@
 
         <hr class="my-8">
 
-        <div id="formulario-registro" class="hidden bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4">Registrar Ganado</h2>
-            
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">UID</label>
-                    <input type="text" id="form-uid" readonly class="mt-1 block w-full p-2 bg-gray-200 border-gray-300 rounded-md shadow-sm">
-                    <input type="hidden" id="form-scan-id">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Nombre / Identificador</label>
-                    <input type="text" id="form-nombre" placeholder="Ej: Manchitas" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Sexo</label>
-                    <select id="form-sexo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                        <option value="hembra">Hembra</option>
-                        <option value="macho">Macho</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Edad (años)</label>
-                    <input type="number" id="form-edad-anos" value="0" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Edad (meses)</label>
-                    <input type="number" id="form-edad-meses" value="0" min="0" max="11" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
-                    <input type="number" id="form-peso" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-
-                <div id="campo-estado-macho" class="hidden col-span-1">
-                    <label class="block text-sm font-medium text-gray-700">Estado</label>
-                    <select id="form-estado-macho" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                        <option value="reproduccion">Reproducción</option>
-                        <option value="venta">Venta / Engorde</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="campos-hembra" class="grid grid-cols-3 gap-4 mt-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Número de Partos</label>
-                    <input type="number" id="form-partos" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">¿Embarazada?</label>
-                    <select id="form-embarazada" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                        <option value="false">No</option>
-                        <option value="true">Sí</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Fecha del último parto</label>
-                    <input type="date" id="form-ultimo-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-                
-                <div id="campo-fecha-estimada" class="hidden col-span-1">
-                    <label class="block text-sm font-medium text-gray-700">Fecha estimada del parto</label>
-                    <input type="date" id="form-estimada-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-            </div>
-
-            <div class="mt-6 flex gap-4">
-                <button id="btn-guardar" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar Ganado</button>
-                <button id="btn-cancelar" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancelar</button>
-            </div>
-        </div>
-
-        <hr class="my-8">
-
+        
         <div class="mb-4 border-b border-gray-200">
             <nav class="-mb-px flex space-x-8" id="tab-nav">
                 <button class="tab-button active pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="inventario">
                     Mi Inventario
                 </button>
-                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="pronostico">
-                    Pronóstico de Partos 🍼
+                <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="gestion">
+                    Gestión Reproductiva y Productiva
                 </button>
                 <button class="tab-button pb-2 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" data-tab="lotes">
-                    Lotes de Venta 📈
+                    Lotes de Venta
                 </button>
             </nav>
         </div>
@@ -196,11 +125,29 @@
                     </div>
             </div>
 
-            <div id="pronostico" class="tab-content">
-                <h2 class="text-xl font-semibold mb-4 text-green-700">Partos más Cercanos</h2>
-                <p id="cargando-pronostico" class="text-gray-500">Analizando registros de hembras preñadas...</p>
-                <div id="lista-pronostico" class="space-y-4">
-                    </div>
+            <div id="gestion" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-green-700">Reportes de Gestión</h2>
+                
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner mb-6">
+                    <h3 class="text-lg font-medium mb-3 text-green-700">Partos más Cercanos</h3>
+                    <p id="cargando-pronostico" class="text-gray-500">Analizando registros de hembras preñadas...</p>
+                    <div id="lista-pronostico" class="space-y-4">
+                        </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner mb-6">
+                    <h3 class="text-lg font-medium mb-3 text-blue-700">Vacas en Descanso/Espera (Post-Parto)</h3>
+                    <p id="cargando-descanso" class="text-gray-500">Analizando hembras en periodo de descanso (60 días post-parto)...</p>
+                    <div id="lista-descanso" class="space-y-4">
+                        </div>
+                </div>
+
+                <div class="bg-red-50 p-4 rounded-lg shadow-inner mb-6">
+                    <h3 class="text-lg font-medium mb-3 text-red-700">Vacas de Descarte Opcional</h3>
+                    <p id="cargando-descarte" class="text-gray-500">Buscando animales con baja productividad o infertilidad...</p>
+                    <div id="lista-descarte" class="space-y-4">
+                        </div>
+                </div>
             </div>
             
             <div id="lotes" class="tab-content">
@@ -239,6 +186,95 @@
             </div>
 
         </div> </div>
+
+    <div id="modal-ganado" class="modal">
+        <div class="modal-content">
+            <h2 id="formulario-titulo" class="text-2xl font-semibold mb-4 text-blue-800">Registrar Ganado</h2>
+            
+            <div id="formulario-campos-container" class="bg-blue-50 p-6 rounded-lg">
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">UID</label>
+                        <input type="text" id="form-uid" readonly class="mt-1 block w-full p-2 bg-gray-200 border-gray-300 rounded-md shadow-sm">
+                        <input type="hidden" id="form-scan-id">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nombre / Identificador</label>
+                        <input type="text" id="form-nombre" placeholder="Ej: Manchitas" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Sexo</label>
+                        <select id="form-sexo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="hembra">Hembra</option>
+                            <option value="macho">Macho</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                        <input type="date" id="form-fecha-nacimiento" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                    
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
+                        <input type="number" id="form-peso" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+
+                    <div id="campo-estado-macho" class="hidden col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Estado del Macho</label>
+                        <select id="form-estado-macho" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="reproduccion">Reproducción</option>
+                            <option value="venta">Venta / Engorde</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="campos-hembra" class="grid grid-cols-3 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Estado de la Hembra</label>
+                        <select id="form-estado-hembra" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="reproduccion">Reproducción</option>
+                            <option value="lechera">Lechera</option>
+                            <option value="engorda">Engorda/Venta</option>
+                        </select>
+                    </div>
+                
+                    <div id="campo-promedio-leche" class="hidden col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Promedio de Leche (L/día)</label>
+                        <input type="number" id="form-promedio-leche" min="0" step="0.1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Número de Partos</label>
+                        <input type="number" id="form-partos" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">¿Embarazada?</label>
+                        <select id="form-embarazada" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="false">No</option>
+                            <option value="true">Sí</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Fecha del último parto</label>
+                        <input type="date" id="form-ultimo-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    
+                    <div id="campo-fecha-estimada" class="hidden col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">Fecha estimada del parto</label>
+                        <input type="date" id="form-estimada-parto" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-4 justify-end">
+                <button id="btn-cancelar-modal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancelar</button>
+                <button id="btn-guardar-modal" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar Ganado</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-asignar-lote" class="modal">
         <div class="modal-content">
@@ -279,10 +315,10 @@
             
             <div class="flex justify-between items-center mb-4">
                 <button id="btn-abrir-asignacion-lote" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    ➕ Añadir Animales
+                    Añadir Animales
                 </button>
                 <button id="btn-vender-lote" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                    💰 Vender Lote y Eliminar Animales
+                    Vender Lote y Eliminar Animales
                 </button>
             </div>
             
@@ -300,12 +336,7 @@
     </div>
 
 
-    <script type="module">
-        // Importamos la función de inicio desde nuestro módulo principal
-        import { iniciarSistema } from './ganado_manager.js';
-        
-        // Iniciamos el sistema al cargar la página
-        iniciarSistema();
-    </script>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="ganado_manager.js"></script>
 </body>
 </html>
