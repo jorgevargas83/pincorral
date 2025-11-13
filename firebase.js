@@ -7,7 +7,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { 
     getAuth, 
-    signInWithEmailAndPassword 
+    signInWithEmailAndPassword,
+    onAuthStateChanged, // <-- AÑADIDO PARA LOGIN
+    signOut              // <-- AÑADIDO PARA LOGIN
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
 
@@ -33,8 +35,16 @@ export {
     getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch
 };
 
+// --- EXPORTAR MÉTODOS DE AUTENTICACIÓN ---
+export {
+    signInWithEmailAndPassword,
+    onAuthStateChanged, // <-- AÑADIDO PARA LOGIN
+    signOut             // <-- AÑADIDO PARA LOGIN
+};
+
 /**
  * Función de autenticación al iniciar el sistema.
+ * (Esta función ya no se usa con el nuevo sistema de login, pero la dejamos)
  */
 export async function iniciarAutenticacion() {
     try {

@@ -1,12 +1,14 @@
 // ganado_manager.js
 
 // --- 1. IMPORTAR FUNCIONES Y MÓDULOS ---
-// ... (mantenemos las importaciones)
 import { 
     iniciarAutenticacion, db, 
     collection, onSnapshot, doc, 
     setDoc, deleteDoc, 
-    updateDoc, arrayUnion, arrayRemove, writeBatch
+    updateDoc, arrayUnion, arrayRemove, writeBatch,
+    auth, // <-- AÑADIDO PARA LOGIN
+    onAuthStateChanged, // <-- AÑADIDO PARA LOGIN
+    signOut // <-- AÑADIDO PARA LOGIN
 } from './firebase.js'; 
 
 // --- 2. REFERENCIAS A ELEMENTOS DEL HTML ---
@@ -73,6 +75,9 @@ const btnCerrarDetalleModal = document.getElementById('btn-cerrar-detalle-modal'
 const btnVenderLote = document.getElementById('btn-vender-lote');
 const btnAbrirAsignacionLote = document.getElementById('btn-abrir-asignacion-lote');
 
+// REFERENCIA AL BOTÓN DE CERRAR SESIÓN
+const btnCerrarSesion = document.getElementById('btn-cerrar-sesion');
+
 // Variables globales
 let uidsDeGanado = new Set();
 let inventarioCache = []; 
@@ -92,11 +97,6 @@ function formatearFecha(fechaStr) {
     }
 }
 
-/**
- * Calcula la diferencia de días entre la fecha de inicio y la fecha actual.
- * @param {string} fechaInicioStr - Fecha de inicio en formato YYYY-MM-DD.
- * @returns {number} Número de días transcurridos.
- */
 function diasTranscurridos(fechaInicioStr) {
     if (!fechaInicioStr) return Infinity;
     try {
@@ -112,16 +112,12 @@ function diasTranscurridos(fechaInicioStr) {
     }
 }
 
-/**
- * Calcula la fecha óptima para la siguiente concepción/parto (90 días post-parto)
- */
 function calcularFechaOptima(ultimoPartoStr, diasDescanso = 90) {
     if (!ultimoPartoStr) return null;
     try {
         const dateParto = new Date(ultimoPartoStr + 'T00:00:00');
         if (isNaN(dateParto)) return null;
-
-        // Sumar los días de descanso (IVE Ideal - 280 días de gestación)
+        
         dateParto.setDate(dateParto.getDate() + diasDescanso);
         
         return dateParto.toISOString().split('T')[0];
@@ -130,16 +126,11 @@ function calcularFechaOptima(ultimoPartoStr, diasDescanso = 90) {
     }
 }
 
-/**
- * Calcula la edad del animal a partir de la fecha de nacimiento.
- * @param {string} fechaNacimientoStr - Fecha de nacimiento en formato YYYY-MM-DD.
- * @returns {{anos: number, texto: string}}
- */
 function calcularEdad(fechaNacimientoStr) {
     if (!fechaNacimientoStr) return { anos: 0, texto: 'Edad Desconocida' };
 
     const hoy = new Date();
-    const fechaNac = new Date(fechaNacimientoStr + 'T00:00:00'); // Asegura zona horaria
+    const fechaNac = new Date(fechaNacimientoStr + 'T00:00:00'); 
     
     if (isNaN(fechaNac)) return { anos: 0, texto: 'Fecha Inválida' };
 
@@ -147,21 +138,17 @@ function calcularEdad(fechaNacimientoStr) {
     let meses = hoy.getMonth() - fechaNac.getMonth();
     let dias = hoy.getDate() - fechaNac.getDate();
 
-    // Ajuste si aún no cumple el mes
     if (dias < 0) {
         meses--;
-        // Calcular días del mes anterior para ajuste (aproximación)
         const tempDate = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
         dias += tempDate.getDate();
     }
 
-    // Ajuste si aún no cumple el año
     if (meses < 0) {
         anos--;
         meses += 12;
     }
     
-    // Edad exacta en años decimales (para promedios)
     const edadDecimal = anos + (meses / 12) + (dias / 365.25); 
 
     let texto = '';
@@ -179,29 +166,19 @@ function calcularEdad(fechaNacimientoStr) {
 }
 
 
-// --- FUNCIÓN DE INICIO ---
-async function iniciarSistema() {
-    cargandoPendientesUI.innerText = "Iniciando...";
-    cargandoInventarioUI.innerText = "Iniciando...";
-    cargandoLotesUI.innerText = "Iniciando...";
-    cargandoDescansoUI.innerText = "Iniciando...";
-    cargandoDescarteUI.innerText = "Iniciando...";
+// --- FUNCIÓN DE INICIO (ESTA ES LA LÓGICA QUE QUEREMOS PROTEGER) ---
+function iniciarApp() {
+    cargandoPendientesUI.innerText = "Cargando...";
+    cargandoInventarioUI.innerText = "Cargando...";
+    cargandoLotesUI.innerText = "Cargando...";
+    cargandoDescansoUI.innerText = "Cargando...";
+    cargandoDescarteUI.innerText = "Cargando...";
     
-    // NOTA: Asumimos que la autenticación funciona correctamente
-    const autenticado = true; //await iniciarAutenticacion(); 
-    
-    if (autenticado) {
-        escucharInventario(); 
-        escucharEscaneosPendientes();
-        escucharLotes(); 
-        actualizarFechaLote();
-    } else {
-        cargandoPendientesUI.innerText = "Error de autenticación.";
-        cargandoInventarioUI.innerText = "Error de autenticación.";
-        cargandoLotesUI.innerText = "Error de autenticación.";
-        cargandoDescansoUI.innerText = "Error de autenticación.";
-        cargandoDescarteUI.innerText = "Error de autenticación.";
-    }
+    // El código que SÍ debe correr si estás logueado
+    escucharInventario(); 
+    escucharEscaneosPendientes();
+    escucharLotes(); 
+    actualizarFechaLote();
 }
 
 // --- LÓGICA DE TABS (PESTAÑAS) ---
@@ -239,7 +216,6 @@ function escucharEscaneosPendientes() {
             if (!scan.uid) return; 
 
             if (uidsDeGanado.has(scan.uid)) {
-                // Resaltar animal existente si es escaneado nuevamente
                 const vacaCard = document.getElementById(`vaca-${scan.uid}`);
                 if (vacaCard) {
                     vacaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -272,11 +248,10 @@ function escucharEscaneosPendientes() {
 
 // --- MOSTRAR FORMULARIO (PARA REGISTRAR O EDITAR) ---
 async function mostrarFormulario(uid, scanId = null, modoEdicion = false) {
-    modalGanadoUI.classList.add('active'); // Muestra el modal
+    modalGanadoUI.classList.add('active'); 
     document.getElementById('form-uid').value = uid;
     document.getElementById('form-scan-id').value = scanId;
     
-    // 1. Limpiar formulario por defecto
     formularioTituloUI.textContent = modoEdicion ? "Editar Ganado" : "Registrar Ganado";
     document.getElementById('form-nombre').value = '';
     document.getElementById('form-peso').value = '';
@@ -295,13 +270,11 @@ async function mostrarFormulario(uid, scanId = null, modoEdicion = false) {
     const animal = inventarioCache.find(a => a.uid === uid);
     
     if (animal) {
-        // Rellenar campos generales
         document.getElementById('form-nombre').value = animal.nombre || '';
         document.getElementById('form-peso').value = animal.peso || 0;
         selectSexo.value = animal.sexo;
         inputFechaNacimiento.value = animal.fechaNacimiento || ''; 
         
-        // Rellenar campos específicos de sexo
         if (animal.sexo === 'hembra') {
             camposHembraUI.classList.remove('hidden');
             campoEstadoMacho.classList.add('hidden');
@@ -311,7 +284,6 @@ async function mostrarFormulario(uid, scanId = null, modoEdicion = false) {
             inputUltimoParto.value = animal.ultimoParto || '';
             selectEstadoHembra.value = animal.estadoHembra || 'reproduccion'; 
             
-            // LÓGICA: Promedio de Leche (solo si está en estado 'lechera' o 'descanso')
             if (animal.estadoHembra === 'lechera' || animal.estadoHembra === 'descanso') {
                 campoPromedioLecheUI.classList.remove('hidden');
                 inputPromedioLeche.value = animal.promedioLeche || '';
@@ -329,10 +301,9 @@ async function mostrarFormulario(uid, scanId = null, modoEdicion = false) {
             camposHembraUI.classList.add('hidden');
             campoEstadoMacho.classList.remove('hidden');
             selectEstadoMacho.value = animal.estadoMacho || 'reproduccion';
-            campoPromedioLecheUI.classList.add('hidden'); // Asegurar que esté oculto para machos
+            campoPromedioLecheUI.classList.add('hidden');
         }
     } else {
-         // Configuración inicial de sexo para nuevo registro
         selectSexo.value = 'hembra';
         camposHembraUI.classList.remove('hidden');
         campoEstadoMacho.classList.add('hidden');
@@ -348,7 +319,6 @@ listaPendientesUI.addEventListener('click', (e) => {
     }
 });
 
-// Event listener para el botón Editar
 document.getElementById('lista-inventario').addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-editar')) {
         const uid = e.target.dataset.uid;
@@ -356,29 +326,23 @@ document.getElementById('lista-inventario').addEventListener('click', (e) => {
     }
 });
 
-
-// Cierra el modal de Ganado
 btnCancelar.addEventListener('click', () => { modalGanadoUI.classList.remove('active'); });
 
-// Mostrar/ocultar fecha estimada de parto
 selectEmbarazada.addEventListener('change', (e) => {
     if (e.target.value === 'true') { campoFechaEstimada.classList.remove('hidden'); } 
     else { campoFechaEstimada.classList.add('hidden'); inputFechaEstimada.value = ''; }
 });
 
-// LÓGICA: Mostrar/ocultar promedio de leche (Actualizada para incluir 'descanso')
 selectEstadoHembra.addEventListener('change', (e) => {
     const estado = e.target.value;
     if (estado === 'lechera' || estado === 'descanso') {
         campoPromedioLecheUI.classList.remove('hidden');
     } else {
         campoPromedioLecheUI.classList.add('hidden');
-        inputPromedioLeche.value = ''; // Limpiar el valor si cambia de estado
+        inputPromedioLeche.value = '';
     }
 });
 
-
-// Alternar campos Hembra/Macho
 selectSexo.addEventListener('change', (e) => {
     const sexo = e.target.value;
     const estadoHembra = selectEstadoHembra.value;
@@ -391,14 +355,12 @@ selectSexo.addEventListener('change', (e) => {
     } else {
         camposHembraUI.classList.remove('hidden');
         
-        // Visibilidad de Embarazada
         if (selectEmbarazada.value === 'true') {
             campoFechaEstimada.classList.remove('hidden');
         } else {
             campoFechaEstimada.classList.add('hidden');
         }
         
-        // Visibilidad de Promedio de Leche
         if (estadoHembra === 'lechera' || estadoHembra === 'descanso') {
             campoPromedioLecheUI.classList.remove('hidden');
         } else {
@@ -419,7 +381,6 @@ btnGuardar.addEventListener('click', async () => {
     const peso = parseInt(document.getElementById('form-peso').value) || 0;
     const fechaNacimiento = inputFechaNacimiento.value; 
     
-    // --- VALIDACIONES BÁSICAS ---
     if (!nombre || !uid || peso <= 0) {
         alert("Error: Verifica todos los campos (Nombre, UID y Peso deben ser válidos).");
         return;
@@ -428,9 +389,7 @@ btnGuardar.addEventListener('click', async () => {
          alert("Error: La Fecha de Nacimiento es obligatoria.");
          return;
     }
-    // ---------------------------
     
-    // Calcular edad para validación de partos
     const edadCalculada = calcularEdad(fechaNacimiento);
     const edadAnosDecimal = edadCalculada.anos;
 
@@ -457,10 +416,9 @@ btnGuardar.addEventListener('click', async () => {
         datosGanado.ultimoParto = inputUltimoParto.value || null;
         datosGanado.estimadaParto = datosGanado.embarazada ? (inputFechaEstimada.value || null) : null;
         
-        // LÓGICA: Promedio de Leche (Actualizada para incluir 'descanso')
         if (datosGanado.estadoHembra === 'lechera' || datosGanado.estadoHembra === 'descanso') {
             const leche = parseFloat(inputPromedioLeche.value);
-            if (isNaN(leche) || leche < 0) { // Permitir 0 pero advertir
+            if (isNaN(leche) || leche < 0) {
                 alert("Error: El Promedio de Leche (L/día) debe ser un número positivo o cero.");
                 return;
             }
@@ -478,7 +436,7 @@ btnGuardar.addEventListener('click', async () => {
         }
     } else if (sexo === 'macho') {
         datosGanado.estadoMacho = selectEstadoMacho.value;
-        datosGanado.promedioLeche = null; // Asegurar que no se guarde leche para machos
+        datosGanado.promedioLeche = null;
     }
 
     try {
@@ -493,7 +451,6 @@ btnGuardar.addEventListener('click', async () => {
             alert("¡Ganado actualizado con éxito!");
         }
         
-        // Cierra el modal después de guardar con éxito
         modalGanadoUI.classList.remove('active'); 
     } catch (error) {
         console.error("Error al guardar:", error);
@@ -529,7 +486,6 @@ function escucharInventario() {
         });
         
         renderizarInventario(); 
-        // Llama a la renderización de reportes si la pestaña de Gestión está activa
         if (document.getElementById('gestion').classList.contains('active')) {
             renderizarReportesGestion();
         }
@@ -570,7 +526,6 @@ function renderizarInventario() {
         item.id = `vaca-${animalId}`; 
         item.className = 'p-4 bg-white border rounded-lg shadow-sm item-vaca';
 
-        // --- CALCULAR Y MOSTRAR EDAD ---
         const edad = calcularEdad(animal.fechaNacimiento);
         const edadTexto = edad.texto; 
 
@@ -605,7 +560,6 @@ function renderizarInventario() {
                     break;
             }
             
-            // Mostrar Promedio de Leche para lecheras y descanso
             if ((animal.estadoHembra === 'lechera' || animal.estadoHembra === 'descanso') && animal.promedioLeche >= 0) {
                  estadoTexto += ` (${animal.promedioLeche} L/día)`;
             }
@@ -613,7 +567,6 @@ function renderizarInventario() {
             htmlCamposExtra += `<p>Estado: <strong class="${colorEstado}">${estadoTexto}</strong></p>`; 
             htmlCamposExtra += `<p>Partos: ${animal.partos || 0}</p>`;
 
-            // 1. Mostrar estado de embarazo
             if (animal.embarazada) {
                 const fechaEstimadaFmt = formatearFecha(animal.estimadaParto);
                 htmlCamposExtra += `<p class="font-bold text-green-700">Embarazada: Sí</p>`;
@@ -622,9 +575,8 @@ function renderizarInventario() {
                 htmlCamposExtra += `<p>Embarazada: No</p>`;
             }
             
-            // 2. Mostrar la fecha óptima SI tiene un último parto registrado y no está embarazada
             if (animal.ultimoParto && !animal.embarazada) {
-                const DIAS_DESCANSO_IDEAL = 90; // Periodo de espera para volver a preñar
+                const DIAS_DESCANSO_IDEAL = 90;
                 const dias = diasTranscurridos(animal.ultimoParto);
                 const fechaOptimaStr = calcularFechaOptima(animal.ultimoParto, DIAS_DESCANSO_IDEAL);
                 
@@ -713,7 +665,6 @@ inventarioUI.addEventListener('click', async (e) => {
 
 // --- RENDERIZAR REPORTES DE GESTIÓN (Todo en una función) ---
 function renderizarReportesGestion() {
-    // Limpiar
     listaPronosticoUI.innerHTML = '';
     listaDescansoUI.innerHTML = '';
     listaDescarteUI.innerHTML = '';
@@ -723,7 +674,6 @@ function renderizarReportesGestion() {
     
     const hembras = inventarioCache.filter(animal => animal.sexo === 'hembra');
     
-    // --- CÁLCULO DE PROMEDIOS (Para descarte) ---
     const vacasLecheras = hembras.filter(a => a.estadoHembra === 'lechera' && a.promedioLeche > 0);
     const totalLeche = vacasLecheras.reduce((sum, a) => sum + a.promedioLeche, 0);
     const promedioLecheGeneral = vacasLecheras.length > 0 ? totalLeche / vacasLecheras.length : 0;
@@ -732,17 +682,14 @@ function renderizarReportesGestion() {
     let hayDescanso = false;
     let hayDescarte = false;
     
-    // Constantes de Gestión
-    const DIAS_DESCANSO_POST_PARTO = 90; // Ideal para esperar antes de volver a preñar
-    const DIAS_INFERTILIDAD_ALERTA = 730; // 2 años sin parto para descarte opcional
-    const PORCENTAJE_BAJA_PRODUCCION = 0.8; // 80% del promedio para considerar descarte
+    const DIAS_DESCANSO_POST_PARTO = 90;
+    const DIAS_INFERTILIDAD_ALERTA = 730;
+    const PORCENTAJE_BAJA_PRODUCCION = 0.8; 
     
-    // Recorrer Hembras
     hembras.forEach(animal => {
         const animalId = animal.uid;
         const edad = calcularEdad(animal.fechaNacimiento);
         
-        // 1. Pronóstico de Partos (No necesita inferencia, solo el dato)
         if (animal.embarazada && animal.estimadaParto) {
             hayPronostico = true;
             const fechaParto = new Date((animal.estimadaParto || '') + 'T00:00:00'); 
@@ -758,11 +705,9 @@ function renderizarReportesGestion() {
             listaPronosticoUI.appendChild(item);
         }
         
-        // 2. Vacas en Descanso/Espera (INFERENCIA AUTOMÁTICA)
         if (animal.ultimoParto) {
             const diasPostParto = diasTranscurridos(animal.ultimoParto);
             
-            // Si tiene un último parto y han pasado menos de 90 días (periodo de espera/descanso)
             if (diasPostParto >= 1 && diasPostParto <= DIAS_DESCANSO_POST_PARTO) {
                 hayDescanso = true;
                 const fechaOptimaStr = calcularFechaOptima(animal.ultimoParto, DIAS_DESCANSO_POST_PARTO);
@@ -785,17 +730,14 @@ function renderizarReportesGestion() {
             }
         }
 
-        // 3. Vacas de Descarte Opcional (INFERENCIA AUTOMÁTICA)
         let motivoDescarte = [];
         
-        // Criterio A: Baja Productividad (Lechera con leche bajo promedio)
         if (animal.estadoHembra === 'lechera' && animal.promedioLeche >= 0 && promedioLecheGeneral > 0) {
             if (animal.promedioLeche < promedioLecheGeneral * PORCENTAJE_BAJA_PRODUCCION) { 
                 motivoDescarte.push(`Baja producción de leche (${animal.promedioLeche} L/día vs ${promedioLecheGeneral.toFixed(1)} promedio).`);
             }
         }
         
-        // Criterio B: Infertilidad/Atraso Reproductivo
         if (!animal.embarazada && animal.ultimoParto) {
             const diasSinParto = diasTranscurridos(animal.ultimoParto);
             if (diasSinParto > DIAS_INFERTILIDAD_ALERTA) { 
@@ -803,7 +745,6 @@ function renderizarReportesGestion() {
             }
         }
         
-        // Criterio C: Marcado explícitamente (se mantiene por si el usuario lo marca en el formulario)
         if (animal.estadoHembra === 'descarte') {
             motivoDescarte.push("Marcado como Descarte explícitamente por el usuario.");
         }
@@ -827,9 +768,7 @@ function renderizarReportesGestion() {
         }
     });
 
-    // Mensajes si no hay datos
     if (!hayPronostico) { cargandoPronosticoUI.innerText = 'No hay hembras preñadas registradas con fecha estimada de parto.'; cargandoPronosticoUI.style.display = 'block'; }
-    // El reporte de descanso solo aparece si hay vacas con parto reciente
     if (!hayDescanso) { cargandoDescansoUI.innerText = 'No hay hembras que hayan parido recientemente (últimos 90 días).'; cargandoDescansoUI.style.display = 'block'; }
     if (!hayDescarte) { cargandoDescarteUI.innerText = `No hay vacas que cumplan los criterios automáticos de descarte. (Promedio General Leche: ${promedioLecheGeneral.toFixed(1)} L/día).`; cargandoDescarteUI.style.display = 'block'; }
     
@@ -848,7 +787,6 @@ function actualizarFechaLote() {
 }
 selectLoteDuracion.addEventListener('change', actualizarFechaLote);
 
-// ESCUCHAR LOTES
 function escucharLotes() {
     const lotesRef = collection(db, "lotes_venta");
     onSnapshot(lotesRef, (querySnapshot) => {
@@ -874,7 +812,6 @@ function escucharLotes() {
     });
 }
 
-// RENDERIZAR LOTES
 function renderizarLotes() {
     listaLotesUI.innerHTML = '';
     cargandoLotesUI.style.display = lotesCache.length === 0 ? 'block' : 'none';
@@ -920,7 +857,6 @@ function renderizarLotes() {
     renderizarInventario(); 
 }
 
-// CREAR LOTE
 btnCrearLote.addEventListener('click', async () => {
     const nombre = inputLoteNombre.value.trim();
     const duracionMeses = parseInt(selectLoteDuracion.value);
@@ -953,7 +889,6 @@ btnCrearLote.addEventListener('click', async () => {
     }
 });
 
-// ELIMINAR LOTE
 listaLotesUI.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-eliminar-lote')) {
         const loteId = e.target.dataset.loteId;
@@ -973,7 +908,6 @@ listaLotesUI.addEventListener('click', async (e) => {
 
 // --- LÓGICA DE ASIGNACIÓN/DETALLE DE LOTE ---
 
-// 1. Mostrar Modal de Asignación (desde el botón "Asignar a Lote" en Inventario)
 inventarioUI.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-asignar-lote')) {
         uidTemporalParaAsignacion = e.target.dataset.uid;
@@ -981,13 +915,11 @@ inventarioUI.addEventListener('click', (e) => {
     }
 });
 
-// 2. Abrir Modal de Asignación (desde el botón en Modal de Detalle)
 btnAbrirAsignacionLote.addEventListener('click', () => {
     abrirModalAsignacion(null);
 });
 
 function abrirModalAsignacion(uid = null) {
-    // Si el UID es nulo, estamos abriendo desde el modal de detalle del lote.
     if (!uid && loteActualDetalle) {
         uidAAsignarUI.textContent = `para el Lote: ${loteActualDetalle.nombre}`;
     } else {
@@ -1021,7 +953,6 @@ function abrirModalAsignacion(uid = null) {
     });
 }
 
-// CERRAR MODALES
 btnCerrarModal.addEventListener('click', () => { 
     modalAsignarLoteUI.classList.remove('active'); 
     uidTemporalParaAsignacion = null;
@@ -1032,24 +963,20 @@ btnCerrarDetalleModal.addEventListener('click', () => {
 });
 
 
-// FUNCIÓN DE ASIGNACIÓN FINAL
 async function asignarAnimalALote(uid, loteId) {
     if (uid) {
          const animalRef = doc(db, "ganado", uid);
          const loteRef = doc(db, "lotes_venta", loteId);
 
         try {
-            // 1. Agregar UID al array 'animales' del lote
             await updateDoc(loteRef, {
                 animales: arrayUnion(uid)
             });
             
-            // 2. Actualizar el estado del animal a 'engorda' o 'venta'
             const animal = inventarioCache.find(a => a.uid === uid);
             if (animal && animal.sexo === 'macho') {
                 await updateDoc(animalRef, { estadoMacho: 'venta' }); 
             } else if (animal && animal.sexo === 'hembra') {
-                // El estado para animales en lote de venta es 'engorda'
                 await updateDoc(animalRef, { estadoHembra: 'engorda' });
             }
 
@@ -1066,7 +993,6 @@ async function asignarAnimalALote(uid, loteId) {
     }
 }
 
-// MOSTRAR DETALLES DEL LOTE
 listaLotesUI.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-ver-detalle')) {
         const loteId = e.target.dataset.loteId;
@@ -1085,7 +1011,6 @@ async function mostrarDetallesLote(loteId) {
 
     const uidsEnLote = loteActualDetalle.animales; 
     
-    // Estadísticas
     detalleStatsCantidadUI.textContent = uidsEnLote.length;
     let pesoTotal = 0;
     let edadTotalAnos = 0;
@@ -1096,7 +1021,6 @@ async function mostrarDetallesLote(loteId) {
         if (animal) {
             animalesEncontrados.push(animal);
             pesoTotal += (animal.peso || 0);
-            // Usa la función de cálculo de edad
             const edad = calcularEdad(animal.fechaNacimiento);
             edadTotalAnos += edad.anos; 
         }
@@ -1106,7 +1030,6 @@ async function mostrarDetallesLote(loteId) {
     detalleStatsPesoUI.textContent = count > 0 ? `${(pesoTotal / count).toFixed(1)} kg` : '0 kg';
     detalleStatsEdadUI.textContent = count > 0 ? `${(edadTotalAnos / count).toFixed(1)} años` : '0 años';
 
-    // Lista de Animales
     detalleLoteAnimalesUI.innerHTML = '';
     if (count === 0) {
         detalleLoteAnimalesUI.innerHTML = '<p class="text-gray-600">No hay animales asignados a este lote.</p>';
@@ -1130,7 +1053,6 @@ async function mostrarDetallesLote(loteId) {
     });
 }
 
-// QUITAR ANIMAL DE LOTE
 detalleLoteAnimalesUI.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-quitar-lote')) {
         const uid = e.target.dataset.uid;
@@ -1142,17 +1064,14 @@ detalleLoteAnimalesUI.addEventListener('click', async (e) => {
         const animalRef = doc(db, "ganado", uid);
         
         try {
-            // 1. Quitar UID del array 'animales' del lote
             await updateDoc(loteRef, {
                 animales: arrayRemove(uid)
             });
             
-            // 2. Revertir el estado del animal a 'reproduccion'
             const animal = inventarioCache.find(a => a.uid === uid);
             if (animal.sexo === 'macho') {
                 await updateDoc(animalRef, { estadoMacho: 'reproduccion' });
             } else if (animal.sexo === 'hembra') {
-                // Revertimos el estado de la hembra a reproducción, que es el más neutral
                 await updateDoc(animalRef, { estadoHembra: 'reproduccion' });
             }
 
@@ -1165,7 +1084,6 @@ detalleLoteAnimalesUI.addEventListener('click', async (e) => {
     }
 });
 
-// VENDER LOTE (Eliminar Lote y Animales)
 btnVenderLote.addEventListener('click', async () => {
     if (!loteActualDetalle) return;
     const loteId = loteActualDetalle.id;
@@ -1176,10 +1094,8 @@ btnVenderLote.addEventListener('click', async () => {
     const batch = writeBatch(db);
     const loteRef = doc(db, "lotes_venta", loteId);
     
-    // 1. Eliminar el documento del lote
     batch.delete(loteRef);
 
-    // 2. Eliminar cada animal del lote del inventario
     loteActualDetalle.animales.forEach(uid => { 
         const animalRef = doc(db, "ganado", uid);
         batch.delete(animalRef);
@@ -1196,5 +1112,45 @@ btnVenderLote.addEventListener('click', async () => {
     }
 });
 
-// Lógica de inicio del sistema
-document.addEventListener('DOMContentLoaded', iniciarSistema);
+
+// -----------------------------------------------------------------
+// --- LÓGICA DE AUTENTICACIÓN (INICIO Y CIERRE DE SESIÓN) ---
+// -----------------------------------------------------------------
+
+// 1. Escuchador de autenticación (Protege la página)
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // El usuario está logueado.
+        console.log("Usuario autenticado:", user.email);
+        // Iniciamos la aplicación (solo si el DOM ya cargó)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', iniciarApp);
+        } else {
+            iniciarApp(); // Si ya cargó, inicia de una vez
+        }
+    } else {
+        // El usuario NO está logueado.
+        console.log("No hay usuario autenticado. Redirigiendo al login...");
+        // Lo mandamos a la página de login
+        window.location.href = 'login.html';
+    }
+});
+
+// 2. Escuchador del botón de Cerrar Sesión
+document.addEventListener('DOMContentLoaded', () => {
+    // Aseguramos que el botón exista antes de añadir el listener
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener('click', async () => {
+            if (confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
+                try {
+                    await signOut(auth);
+                    // onAuthStateChanged se disparará automáticamente y nos redirigirá al login.
+                    console.log("Sesión cerrada.");
+                } catch (error) {
+                    console.error("Error al cerrar sesión:", error);
+                    alert("Error al cerrar sesión.");
+                }
+            }
+        });
+    }
+});
